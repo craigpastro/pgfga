@@ -3,6 +3,8 @@ use pgrx::spi;
 
 pgrx::pg_module_magic!();
 
+pub mod schema;
+
 extension_sql!(
     r#"
     CREATE SCHEMA rebac;
