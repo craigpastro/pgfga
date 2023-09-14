@@ -12,7 +12,7 @@ extension_sql!(
     CREATE TABLE rebac.schema (
         rowid BIGINT GENERATED ALWAYS AS IDENTITY,
         id UUID PRIMARY KEY DEFAULT gen_random_uuid() ,
-        schema TEXT NOT NULL, -- JSON???
+        schema JSON NOT NULL,
         created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
     );
 
@@ -35,11 +35,49 @@ extension_sql!(
 );
 
 #[pg_extern]
-fn pg_rebac_create_schema(schema: &str) -> Result<Option<pgrx::Uuid>, spi::Error> {
+fn pg_rebac_create_schema(schema: pgrx::Json) -> Result<Option<pgrx::Uuid>, spi::Error> {
     Spi::get_one_with_args(
         "INSERT INTO rebac.schema (schema) VALUES ($1) RETURNING id",
-        vec![(PgBuiltInOids::TEXTOID.oid(), schema.into_datum())],
+        vec![(PgBuiltInOids::JSONOID.oid(), schema.into_datum())],
     )
+}
+
+#[pg_extern]
+fn pg_rebac_read_schema(
+    id: pgrx::Uuid,
+) -> Result<
+    TableIterator<
+        'static,
+        (
+            name!(rowid, Result<Option<i64>, spi::Error>),
+            name!(id, Result<Option<pgrx::Uuid>, spi::Error>),
+            name!(schema, Result<Option<pgrx::Json>, spi::Error>),
+            name!(
+                created_at,
+                Result<Option<pgrx::TimestampWithTimeZone>, spi::Error>
+            ),
+        ),
+    >,
+    spi::Error,
+> {
+    Spi::connect(|client| {
+        Ok(client
+            .select(
+                "SELECT * FROM rebac.schema WHERE id = $1",
+                Some(1),
+                Some(vec![(PgBuiltInOids::UUIDOID.oid(), id.into_datum())]),
+            )?
+            .map(|row| {
+                (
+                    row["rowid"].value::<i64>(),
+                    row["id"].value::<pgrx::Uuid>(),
+                    row["schema"].value::<pgrx::Json>(),
+                    row["created_at"].value::<pgrx::TimestampWithTimeZone>(),
+                )
+            })
+            .collect::<Vec<_>>())
+    })
+    .map(|results| TableIterator::new(results))
 }
 
 #[pg_extern]
@@ -81,6 +119,85 @@ fn pg_rebac_create_tuple(
             (PgBuiltInOids::VARCHAROID.oid(), subject_action.into_datum()),
         ]),
     )
+}
+
+#[pg_extern]
+fn pg_rebac_read_tuples(
+    schema_id: pgrx::Uuid,
+    resource_namespace: &str,
+    resource_id: &str,
+    relation: &str,
+    subject_namespace: &str,
+    subject_id: &str,
+    subject_action: default!(&str, "''"),
+) -> Result<
+    TableIterator<
+        'static,
+        (
+            name!(schema_id, Result<Option<pgrx::Uuid>, spi::Error>),
+            name!(resource_namespace, Result<Option<String>, spi::Error>),
+            name!(resource_id, Result<Option<String>, spi::Error>),
+            name!(relation, Result<Option<String>, spi::Error>),
+            name!(subject_namespace, Result<Option<String>, spi::Error>),
+            name!(subject_id, Result<Option<String>, spi::Error>),
+            name!(subject_action, Result<Option<String>, spi::Error>),
+        ),
+    >,
+    spi::Error,
+> {
+    let mut query = "SELECT * FROM rebac.tuple WHERE schema_id = $1".to_string();
+    let mut args = vec![(PgBuiltInOids::UUIDOID.oid(), schema_id.into_datum())];
+
+    if !resource_namespace.is_empty() {
+        args.push((
+            PgBuiltInOids::TEXTOID.oid(),
+            resource_namespace.into_datum(),
+        ));
+        query.push_str(&format!(" AND resource_namespace = ${}", args.len()));
+    }
+
+    if !resource_id.is_empty() {
+        args.push((PgBuiltInOids::TEXTOID.oid(), resource_id.into_datum()));
+        query.push_str(&format!(" AND resource_id = ${}", args.len()));
+    }
+
+    if !relation.is_empty() {
+        args.push((PgBuiltInOids::TEXTOID.oid(), relation.into_datum()));
+        query.push_str(&format!(" AND relation = ${}", args.len()));
+    }
+
+    if !subject_namespace.is_empty() {
+        args.push((PgBuiltInOids::TEXTOID.oid(), subject_namespace.into_datum()));
+        query.push_str(&format!(" AND subject_namespace = ${}", args.len()));
+    }
+
+    if !subject_id.is_empty() {
+        args.push((PgBuiltInOids::TEXTOID.oid(), subject_id.into_datum()));
+        query.push_str(&format!(" AND subject_id = ${}", args.len()));
+    }
+
+    if !subject_action.is_empty() {
+        args.push((PgBuiltInOids::TEXTOID.oid(), subject_action.into_datum()));
+        query.push_str(&format!(" AND subject_action = ${}", args.len()));
+    }
+
+    Spi::connect(|client| {
+        Ok(client
+            .select(&query, None, Some(args))?
+            .map(|row| {
+                (
+                    row["schema_id"].value(),
+                    row["resource_namespace"].value(),
+                    row["resource_id"].value(),
+                    row["relation"].value(),
+                    row["subject_namespace"].value(),
+                    row["subject_id"].value(),
+                    row["subject_action"].value(),
+                )
+            })
+            .collect::<Vec<_>>())
+    })
+    .map(|results| TableIterator::new(results))
 }
 
 #[pg_extern]

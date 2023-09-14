@@ -3,7 +3,13 @@
 An experimental Postgres extension for doing ReBAC within Postgres.
 
 ```
-select pg_rebac_create_schema();
-select pg_rebac_create_tuple(schema_id, 'foo', 'document', '1', 'viewer', 'user', 'anya');
-select pg_rebac_delete_tuple(schema_id, 'foo', 'document', '1', 'viewer', 'user', 'anya');
+select * from pg_rebac_create_schema('{"namespaces":[{"name":"user"},{"name":"document","relations":[{"name":"viewer","typeRestrictions":[{"namespace":"user"}]}],"permissions":[{"name":"can_view","rewrite":{"union":[{"computedUserset":"viewer"},{"tupleToUserset":["parent","can_view"]}]}}]}]}');
+
+select * from pg_rebac_read_schema('cf64b948-440c-485b-9bd6-a7bd7435dea2');
+
+select pg_rebac_create_tuple('cf64b948-440c-485b-9bd6-a7bd7435dea2', 'foo', 'document', '1', 'viewer', 'user', 'anya');
+
+select * from pg_rebac_read_tuples('cf64b948-440c-485b-9bd6-a7bd7435dea2', '', '', '', '', '', '');
+
+select pg_rebac_delete_tuple('cf64b948-440c-485b-9bd6-a7bd7435dea2', 'foo', 'document', '1', 'viewer', 'user', 'anya');
 ```
