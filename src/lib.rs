@@ -1,10 +1,10 @@
+use check::Checker;
 use pgrx::prelude::*;
 use pgrx::spi;
-use pgrx::spi::SpiClient;
-use schema::Schema;
 
 pgrx::pg_module_magic!();
 
+pub mod check;
 pub mod schema;
 
 extension_sql!(
@@ -250,8 +250,8 @@ fn pg_rebac_check(
     subject_namespace: &str,
     subject_id: &str,
     subject_action: default!(&str, "''"),
-) -> Result<Option<bool>, spi::Error> {
-    let result: Result<bool, spi::Error> = Spi::connect(|client| {
+) -> Result<bool, spi::Error> {
+    Spi::connect(|client| {
         let json_schema = client
             .select(
                 "SELECT schema FROM rebac.schema WHERE id = $1",
@@ -265,9 +265,7 @@ fn pg_rebac_check(
         let schema =
             serde_json::from_value(json_schema.0).expect("failed to deserialize the schema");
 
-        check(
-            client,
-            schema,
+        Checker::new(client, schema).check(
             resource_namespace,
             resource_id,
             action,
@@ -275,22 +273,7 @@ fn pg_rebac_check(
             subject_id,
             subject_action,
         )
-    });
-
-    result.map(|b| Some(b))
-}
-
-fn check(
-    client: SpiClient,
-    schema: Schema,
-    resource_namespace: &str,
-    resource_id: &str,
-    action: &str,
-    subject_namespace: &str,
-    subject_id: &str,
-    subject_action: &str,
-) -> Result<bool, spi::Error> {
-    return Ok(false);
+    })
 }
 
 #[pg_extern]
