@@ -9,16 +9,16 @@ pub mod schema;
 
 extension_sql!(
     r#"
-    CREATE SCHEMA rebac;
+    CREATE SCHEMA fga;
 
-    CREATE TABLE rebac.schema (
+    CREATE TABLE .schema (
         rowid BIGINT GENERATED ALWAYS AS IDENTITY,
         id UUID PRIMARY KEY DEFAULT gen_random_uuid() ,
         schema JSON NOT NULL,
         created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
     );
 
-    CREATE TABLE rebac.tuple (
+    CREATE TABLE fga.tuple (
         rowid BIGINT GENERATED ALWAYS AS IDENTITY,
         schema_id UUID NOT NULL,
         resource_namespace VARCHAR(128) NOT NULL,
@@ -33,19 +33,19 @@ extension_sql!(
     -- TODO: add indices!
 
     "#,
-    name = "initialize_pg_rebac"
+    name = "initialize_pg_fga"
 );
 
 #[pg_extern]
-fn pg_rebac_create_schema(schema: pgrx::Json) -> Result<Option<pgrx::Uuid>, spi::Error> {
+fn pg_fga_create_schema(schema: pgrx::Json) -> Result<Option<pgrx::Uuid>, spi::Error> {
     Spi::get_one_with_args(
-        "INSERT INTO rebac.schema (schema) VALUES ($1) RETURNING id",
+        "INSERT INTO fga.schema (schema) VALUES ($1) RETURNING id",
         vec![(PgBuiltInOids::JSONOID.oid(), schema.into_datum())],
     )
 }
 
 #[pg_extern]
-fn pg_rebac_read_schema(
+fn pg_fga_read_schema(
     id: pgrx::Uuid,
 ) -> Result<
     TableIterator<
@@ -65,7 +65,7 @@ fn pg_rebac_read_schema(
     Spi::connect(|client| {
         Ok(client
             .select(
-                "SELECT * FROM rebac.schema WHERE id = $1",
+                "SELECT * FROM fga.schema WHERE id = $1",
                 Some(1),
                 Some(vec![(PgBuiltInOids::UUIDOID.oid(), id.into_datum())]),
             )?
@@ -83,7 +83,7 @@ fn pg_rebac_read_schema(
 }
 
 #[pg_extern]
-fn pg_rebac_create_tuple(
+fn pg_fga_create_tuple(
     schema_id: pgrx::Uuid,
     resource_namespace: &str,
     resource_id: &str,
@@ -94,7 +94,7 @@ fn pg_rebac_create_tuple(
 ) -> Result<(), spi::Error> {
     Spi::run_with_args(
         "
-        INSERT INTO rebac.tuple (
+        INSERT INTO fga.tuple (
             schema_id,
             resource_namespace,
             resource_id,
@@ -124,7 +124,7 @@ fn pg_rebac_create_tuple(
 }
 
 #[pg_extern]
-fn pg_rebac_read_tuples(
+fn pg_fga_read_tuples(
     schema_id: pgrx::Uuid,
     resource_namespace: &str,
     resource_id: &str,
@@ -147,7 +147,7 @@ fn pg_rebac_read_tuples(
     >,
     spi::Error,
 > {
-    let mut query = "SELECT * FROM rebac.tuple WHERE schema_id = $1".to_string();
+    let mut query = "SELECT * FROM fga.tuple WHERE schema_id = $1".to_string();
     let mut args = vec![(PgBuiltInOids::UUIDOID.oid(), schema_id.into_datum())];
 
     if !resource_namespace.is_empty() {
@@ -203,7 +203,7 @@ fn pg_rebac_read_tuples(
 }
 
 #[pg_extern]
-fn pg_rebac_delete_tuple(
+fn pg_fga_delete_tuple(
     schema_id: pgrx::Uuid,
     resource_namespace: &str,
     resource_id: &str,
@@ -214,7 +214,7 @@ fn pg_rebac_delete_tuple(
 ) -> Result<(), spi::Error> {
     Spi::run_with_args(
         "
-        DELETE FROM rebac.tuple
+        DELETE FROM fga.tuple
         WHERE schema_id = $1
             AND resource_namespace = $2
             AND resource_id = $3
@@ -242,7 +242,7 @@ fn pg_rebac_delete_tuple(
 }
 
 #[pg_extern]
-fn pg_rebac_check(
+fn pg_fga_check(
     schema_id: pgrx::Uuid,
     resource_namespace: &str,
     resource_id: &str,
@@ -254,7 +254,7 @@ fn pg_rebac_check(
     Spi::connect(|client| {
         let json_schema = client
             .select(
-                "SELECT schema FROM rebac.schema WHERE id = $1",
+                "SELECT schema FROM fga.schema WHERE id = $1",
                 Some(1),
                 Some(vec![(PgBuiltInOids::UUIDOID.oid(), schema_id.into_datum())]),
             )?
@@ -277,8 +277,8 @@ fn pg_rebac_check(
 }
 
 #[pg_extern]
-fn hello_pg_rebac() -> &'static str {
-    "Hello, pg_rebac"
+fn hello_pg_fga() -> &'static str {
+    "Hello, pg_fga"
 }
 
 #[cfg(any(test, feature = "pg_test"))]
@@ -287,8 +287,8 @@ mod tests {
     use pgrx::prelude::*;
 
     #[pg_test]
-    fn test_hello_pg_rebac() {
-        assert_eq!("Hello, pg_rebac", crate::hello_pg_rebac());
+    fn test_hello_pg_fga() {
+        assert_eq!("Hello, pg_fga", crate::hello_pg_fga());
     }
 }
 
