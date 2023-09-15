@@ -1,19 +1,20 @@
 use check::Checker;
 use error::PgFgaError;
 use pgrx::prelude::*;
-use pgrx::spi;
+use storage::Storage;
 
 pgrx::pg_module_magic!();
 
 pub mod check;
 pub mod error;
 pub mod schema;
+pub mod storage;
 
 extension_sql!(
     r#"
     CREATE SCHEMA fga;
 
-    CREATE TABLE .schema (
+    CREATE TABLE fga.schema (
         rowid BIGINT GENERATED ALWAYS AS IDENTITY,
         id UUID PRIMARY KEY DEFAULT gen_random_uuid() ,
         schema JSON NOT NULL,
@@ -53,35 +54,21 @@ fn pg_fga_read_schema(
     TableIterator<
         'static,
         (
-            name!(rowid, Result<Option<i64>, spi::Error>),
-            name!(id, Result<Option<pgrx::Uuid>, spi::Error>),
-            name!(schema, Result<Option<pgrx::Json>, spi::Error>),
-            name!(
-                created_at,
-                Result<Option<pgrx::TimestampWithTimeZone>, spi::Error>
-            ),
+            name!(rowid, i64),
+            name!(id, pgrx::Uuid),
+            name!(schema, pgrx::Json),
+            name!(created_at, pgrx::TimestampWithTimeZone),
         ),
     >,
     PgFgaError,
 > {
-    Spi::connect(|client| {
-        Ok(client
-            .select(
-                "SELECT * FROM fga.schema WHERE id = $1",
-                Some(1),
-                Some(vec![(PgBuiltInOids::UUIDOID.oid(), id.into_datum())]),
-            )?
-            .map(|row| {
-                (
-                    row["rowid"].value::<i64>(),
-                    row["id"].value::<pgrx::Uuid>(),
-                    row["schema"].value::<pgrx::Json>(),
-                    row["created_at"].value::<pgrx::TimestampWithTimeZone>(),
-                )
-            })
-            .collect::<Vec<_>>())
-    })
-    .map(|results| TableIterator::new(results))
+    let results: Vec<(i64, pgrx::Uuid, pgrx::Json, pgrx::TimestampWithTimeZone)> =
+        Spi::connect(|client| Storage::new(client).read_schema(id))?
+            .into_iter()
+            .map(|row| row.into_tuple())
+            .collect();
+
+    Ok(TableIterator::new(results))
 }
 
 #[pg_extern]
@@ -140,70 +127,43 @@ fn pg_fga_read_tuples(
     TableIterator<
         'static,
         (
-            name!(schema_id, Result<Option<pgrx::Uuid>, spi::Error>),
-            name!(resource_namespace, Result<Option<String>, spi::Error>),
-            name!(resource_id, Result<Option<String>, spi::Error>),
-            name!(relation, Result<Option<String>, spi::Error>),
-            name!(subject_namespace, Result<Option<String>, spi::Error>),
-            name!(subject_id, Result<Option<String>, spi::Error>),
-            name!(subject_action, Result<Option<String>, spi::Error>),
+            name!(rowid, i64),
+            name!(schema_id, pgrx::Uuid),
+            name!(resource_namespace, String),
+            name!(resource_id, String),
+            name!(relation, String),
+            name!(subject_namespace, String),
+            name!(subject_id, String),
+            name!(subject_action, String),
         ),
     >,
     PgFgaError,
 > {
-    let mut query = "SELECT * FROM fga.tuple WHERE schema_id = $1".to_string();
-    let mut args = vec![(PgBuiltInOids::UUIDOID.oid(), schema_id.into_datum())];
+    let result: Vec<(
+        i64,
+        pgrx::Uuid,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+    )> = Spi::connect(|client| {
+        Storage::new(client).read_tuples(
+            schema_id,
+            resource_namespace,
+            resource_id,
+            relation,
+            subject_namespace,
+            subject_id,
+            subject_action,
+        )
+    })?
+    .into_iter()
+    .map(|row| row.into_tuple())
+    .collect();
 
-    if !resource_namespace.is_empty() {
-        args.push((
-            PgBuiltInOids::TEXTOID.oid(),
-            resource_namespace.into_datum(),
-        ));
-        query.push_str(&format!(" AND resource_namespace = ${}", args.len()));
-    }
-
-    if !resource_id.is_empty() {
-        args.push((PgBuiltInOids::TEXTOID.oid(), resource_id.into_datum()));
-        query.push_str(&format!(" AND resource_id = ${}", args.len()));
-    }
-
-    if !relation.is_empty() {
-        args.push((PgBuiltInOids::TEXTOID.oid(), relation.into_datum()));
-        query.push_str(&format!(" AND relation = ${}", args.len()));
-    }
-
-    if !subject_namespace.is_empty() {
-        args.push((PgBuiltInOids::TEXTOID.oid(), subject_namespace.into_datum()));
-        query.push_str(&format!(" AND subject_namespace = ${}", args.len()));
-    }
-
-    if !subject_id.is_empty() {
-        args.push((PgBuiltInOids::TEXTOID.oid(), subject_id.into_datum()));
-        query.push_str(&format!(" AND subject_id = ${}", args.len()));
-    }
-
-    if !subject_action.is_empty() {
-        args.push((PgBuiltInOids::TEXTOID.oid(), subject_action.into_datum()));
-        query.push_str(&format!(" AND subject_action = ${}", args.len()));
-    }
-
-    Spi::connect(|client| {
-        Ok(client
-            .select(&query, None, Some(args))?
-            .map(|row| {
-                (
-                    row["schema_id"].value(),
-                    row["resource_namespace"].value(),
-                    row["resource_id"].value(),
-                    row["relation"].value(),
-                    row["subject_namespace"].value(),
-                    row["subject_id"].value(),
-                    row["subject_action"].value(),
-                )
-            })
-            .collect::<Vec<_>>())
-    })
-    .map(|results| TableIterator::new(results))
+    Ok(TableIterator::new(result))
 }
 
 #[pg_extern]
@@ -257,21 +217,8 @@ fn pg_fga_check(
     subject_id: &str,
     subject_action: default!(&str, "''"),
 ) -> Result<bool, PgFgaError> {
-    let result = Spi::connect(|client| {
-        let json_schema = client
-            .select(
-                "SELECT schema FROM fga.schema WHERE id = $1",
-                Some(1),
-                Some(vec![(PgBuiltInOids::UUIDOID.oid(), schema_id.into_datum())]),
-            )?
-            .first()
-            .get_one::<pgrx::Json>()?
-            .expect("didn't find the schema");
-
-        let schema =
-            serde_json::from_value(json_schema.0).expect("failed to deserialize the schema");
-
-        Checker::new(client, schema).check(
+    Spi::connect(|client| {
+        Checker::new(Storage::new(client), schema_id)?.check(
             resource_namespace,
             resource_id,
             action,
@@ -279,9 +226,7 @@ fn pg_fga_check(
             subject_id,
             subject_action,
         )
-    });
-
-    Ok(result?)
+    })
 }
 
 #[pg_extern]
