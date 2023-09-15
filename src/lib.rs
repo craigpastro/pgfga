@@ -1,10 +1,12 @@
 use check::Checker;
+use error::PgFgaError;
 use pgrx::prelude::*;
 use pgrx::spi;
 
 pgrx::pg_module_magic!();
 
 pub mod check;
+pub mod error;
 pub mod schema;
 
 extension_sql!(
@@ -37,11 +39,11 @@ extension_sql!(
 );
 
 #[pg_extern]
-fn pg_fga_create_schema(schema: pgrx::Json) -> Result<Option<pgrx::Uuid>, spi::Error> {
-    Spi::get_one_with_args(
+fn pg_fga_create_schema(schema: pgrx::Json) -> Result<Option<pgrx::Uuid>, PgFgaError> {
+    Ok(Spi::get_one_with_args(
         "INSERT INTO fga.schema (schema) VALUES ($1) RETURNING id",
         vec![(PgBuiltInOids::JSONOID.oid(), schema.into_datum())],
-    )
+    )?)
 }
 
 #[pg_extern]
@@ -60,7 +62,7 @@ fn pg_fga_read_schema(
             ),
         ),
     >,
-    spi::Error,
+    PgFgaError,
 > {
     Spi::connect(|client| {
         Ok(client
@@ -91,8 +93,8 @@ fn pg_fga_create_tuple(
     subject_namespace: &str,
     subject_id: &str,
     subject_action: default!(&str, "''"),
-) -> Result<(), spi::Error> {
-    Spi::run_with_args(
+) -> Result<(), PgFgaError> {
+    let result = Spi::run_with_args(
         "
         INSERT INTO fga.tuple (
             schema_id,
@@ -120,7 +122,9 @@ fn pg_fga_create_tuple(
             (PgBuiltInOids::VARCHAROID.oid(), subject_id.into_datum()),
             (PgBuiltInOids::VARCHAROID.oid(), subject_action.into_datum()),
         ]),
-    )
+    );
+
+    Ok(result?)
 }
 
 #[pg_extern]
@@ -145,7 +149,7 @@ fn pg_fga_read_tuples(
             name!(subject_action, Result<Option<String>, spi::Error>),
         ),
     >,
-    spi::Error,
+    PgFgaError,
 > {
     let mut query = "SELECT * FROM fga.tuple WHERE schema_id = $1".to_string();
     let mut args = vec![(PgBuiltInOids::UUIDOID.oid(), schema_id.into_datum())];
@@ -211,8 +215,8 @@ fn pg_fga_delete_tuple(
     subject_namespace: &str,
     subject_id: &str,
     subject_action: default!(&str, "''"),
-) -> Result<(), spi::Error> {
-    Spi::run_with_args(
+) -> Result<(), PgFgaError> {
+    let result = Spi::run_with_args(
         "
         DELETE FROM fga.tuple
         WHERE schema_id = $1
@@ -238,7 +242,9 @@ fn pg_fga_delete_tuple(
             (PgBuiltInOids::VARCHAROID.oid(), subject_id.into_datum()),
             (PgBuiltInOids::VARCHAROID.oid(), subject_action.into_datum()),
         ]),
-    )
+    );
+
+    Ok(result?)
 }
 
 #[pg_extern]
@@ -250,8 +256,8 @@ fn pg_fga_check(
     subject_namespace: &str,
     subject_id: &str,
     subject_action: default!(&str, "''"),
-) -> Result<bool, spi::Error> {
-    Spi::connect(|client| {
+) -> Result<bool, PgFgaError> {
+    let result = Spi::connect(|client| {
         let json_schema = client
             .select(
                 "SELECT schema FROM fga.schema WHERE id = $1",
@@ -273,7 +279,9 @@ fn pg_fga_check(
             subject_id,
             subject_action,
         )
-    })
+    });
+
+    Ok(result?)
 }
 
 #[pg_extern]

@@ -1,41 +1,28 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct Schema {
-    namespaces: Vec<Namespace>,
+    pub namespaces: HashMap<String, Namespace>,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
-struct Namespace {
-    name: String,
-    relations: Vec<Relation>,
-    permissions: Vec<Permission>,
-}
-
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct Relation {
-    name: String,
-    type_restrictions: Vec<TypeRestriction>,
-}
-
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
-struct Permission {
-    name: String,
-    rewrite: Rewrite,
+pub struct Namespace {
+    pub relations: HashMap<String, Vec<TypeRestriction>>,
+    pub permissions: HashMap<String, Rewrite>,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
-
-enum TypeRestriction {
+pub enum TypeRestriction {
     Namespace(String),
     NamespaceAction(String, String),
 }
 
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
-enum Rewrite {
+pub enum Rewrite {
     ComputedUserset(String),
     TupleToUserset(String, String),
     Union(Vec<Rewrite>),
@@ -48,27 +35,34 @@ mod test {
     #[test]
     fn ser_then_der_works() {
         let schema = Schema {
-            namespaces: vec![
-                Namespace {
-                    name: "user".to_string(),
-                    relations: vec![],
-                    permissions: vec![],
-                },
-                Namespace {
-                    name: "document".to_string(),
-                    relations: vec![Relation {
-                        name: "viewer".to_string(),
-                        type_restrictions: vec![TypeRestriction::Namespace("user".to_string())],
-                    }],
-                    permissions: vec![Permission {
-                        name: "can_view".to_string(),
-                        rewrite: Rewrite::Union(vec![
-                            Rewrite::ComputedUserset("viewer".to_string()),
-                            Rewrite::TupleToUserset("parent".to_string(), "can_view".to_string()),
-                        ]),
-                    }],
-                },
-            ],
+            namespaces: HashMap::from([
+                (
+                    "user".to_string(),
+                    Namespace {
+                        relations: HashMap::new(),
+                        permissions: HashMap::new(),
+                    },
+                ),
+                (
+                    "document".to_string(),
+                    Namespace {
+                        relations: HashMap::from([(
+                            "viewer".to_string(),
+                            vec![TypeRestriction::Namespace("user".to_string())],
+                        )]),
+                        permissions: HashMap::from([(
+                            "can_view".to_string(),
+                            Rewrite::Union(vec![
+                                Rewrite::ComputedUserset("viewer".to_string()),
+                                Rewrite::TupleToUserset(
+                                    "parent".to_string(),
+                                    "can_view".to_string(),
+                                ),
+                            ]),
+                        )]),
+                    },
+                ),
+            ]),
         };
 
         let serialized = serde_json::to_string(&schema).unwrap();
