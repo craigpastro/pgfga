@@ -1,5 +1,7 @@
 use pgrx::prelude::*;
 use pgrx::spi;
+use pgrx::spi::SpiClient;
+use schema::Schema;
 
 pgrx::pg_module_magic!();
 
@@ -237,6 +239,58 @@ fn pg_rebac_delete_tuple(
             (PgBuiltInOids::VARCHAROID.oid(), subject_action.into_datum()),
         ]),
     )
+}
+
+#[pg_extern]
+fn pg_rebac_check(
+    schema_id: pgrx::Uuid,
+    resource_namespace: &str,
+    resource_id: &str,
+    action: &str,
+    subject_namespace: &str,
+    subject_id: &str,
+    subject_action: default!(&str, "''"),
+) -> Result<Option<bool>, spi::Error> {
+    let result: Result<bool, spi::Error> = Spi::connect(|client| {
+        let json_schema = client
+            .select(
+                "SELECT schema FROM rebac.schema WHERE id = $1",
+                Some(1),
+                Some(vec![(PgBuiltInOids::UUIDOID.oid(), schema_id.into_datum())]),
+            )?
+            .first()
+            .get_one::<pgrx::Json>()?
+            .expect("didn't find the schema");
+
+        let schema =
+            serde_json::from_value(json_schema.0).expect("failed to deserialize the schema");
+
+        check(
+            client,
+            schema,
+            resource_namespace,
+            resource_id,
+            action,
+            subject_namespace,
+            subject_id,
+            subject_action,
+        )
+    });
+
+    result.map(|b| Some(b))
+}
+
+fn check(
+    client: SpiClient,
+    schema: Schema,
+    resource_namespace: &str,
+    resource_id: &str,
+    action: &str,
+    subject_namespace: &str,
+    subject_id: &str,
+    subject_action: &str,
+) -> Result<bool, spi::Error> {
+    return Ok(false);
 }
 
 #[pg_extern]

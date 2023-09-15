@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
-struct Schema {
+pub struct Schema {
     namespaces: Vec<Namespace>,
 }
 
@@ -73,7 +73,7 @@ mod test {
 
         let serialized = serde_json::to_string(&schema).unwrap();
         let deserialized: Schema = serde_json::from_str(&serialized).unwrap();
-        
+
         assert_eq!(schema, deserialized);
     }
 }
