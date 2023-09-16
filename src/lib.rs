@@ -176,35 +176,17 @@ fn pgfga_delete_tuple(
     subject_id: &str,
     subject_action: default!(&str, "''"),
 ) -> Result<(), PgFgaError> {
-    let result = Spi::run_with_args(
-        "
-        DELETE FROM pgfga.tuple
-        WHERE schema_id = $1
-            AND resource_namespace = $2
-            AND resource_id = $3
-            AND relation = $4
-            AND subject_namespace = $5
-            AND subject_id = $6
-            AND subject_action = $7
-        ",
-        Some(vec![
-            (PgBuiltInOids::UUIDOID.oid(), schema_id.into_datum()),
-            (
-                PgBuiltInOids::VARCHAROID.oid(),
-                resource_namespace.into_datum(),
-            ),
-            (PgBuiltInOids::VARCHAROID.oid(), resource_id.into_datum()),
-            (PgBuiltInOids::VARCHAROID.oid(), relation.into_datum()),
-            (
-                PgBuiltInOids::VARCHAROID.oid(),
-                subject_namespace.into_datum(),
-            ),
-            (PgBuiltInOids::VARCHAROID.oid(), subject_id.into_datum()),
-            (PgBuiltInOids::VARCHAROID.oid(), subject_action.into_datum()),
-        ]),
-    );
-
-    Ok(result?)
+    Spi::connect(|client| {
+        Storage::new(client).delete_tuple(
+            schema_id,
+            resource_namespace,
+            resource_id,
+            relation,
+            subject_namespace,
+            subject_id,
+            subject_action,
+        )
+    })
 }
 
 #[pg_extern]

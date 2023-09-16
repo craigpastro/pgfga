@@ -240,6 +240,45 @@ impl<'a> Storage<'a> {
         Ok(results)
     }
 
+    pub fn delete_tuple(
+        &mut self,
+        schema_id: pgrx::Uuid,
+        resource_namespace: &str,
+        resource_id: &str,
+        relation: &str,
+        subject_namespace: &str,
+        subject_id: &str,
+        subject_action: &str,
+    ) -> Result<(), PgFgaError> {
+        let query = "
+        DELETE FROM pgfga.tuple
+        WHERE schema_id = $1
+            AND resource_namespace = $2
+            AND resource_id = $3
+            AND relation = $4
+            AND subject_namespace = $5
+            AND subject_id = $6
+            AND subject_action = $7
+        ";
+
+        let args = vec![
+            (PgBuiltInOids::UUIDOID.oid(), schema_id.into_datum()),
+            (
+                PgBuiltInOids::TEXTOID.oid(),
+                resource_namespace.into_datum(),
+            ),
+            (PgBuiltInOids::TEXTOID.oid(), resource_id.into_datum()),
+            (PgBuiltInOids::TEXTOID.oid(), relation.into_datum()),
+            (PgBuiltInOids::TEXTOID.oid(), subject_namespace.into_datum()),
+            (PgBuiltInOids::TEXTOID.oid(), subject_id.into_datum()),
+            (PgBuiltInOids::TEXTOID.oid(), subject_action.into_datum()),
+        ];
+
+        self.client.update(query, Some(1), Some(args))?;
+
+        Ok(())
+    }
+
     pub fn read_subjectset_tuples(
         &self,
         schema_id: pgrx::Uuid,

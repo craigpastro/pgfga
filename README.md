@@ -47,6 +47,7 @@ See [./src/lib.rs](./src/lib.rs) for type signatures.
 - Tests
 - Documentation
 - Clean up code
+- Add the proper indices
 - Client library to make this easier to use
 - Read all schemas function
 - Create many tuples function
