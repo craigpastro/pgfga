@@ -12,16 +12,16 @@ pub mod storage;
 
 extension_sql!(
     r#"
-    CREATE SCHEMA fga;
+    CREATE SCHEMA pgfga;
 
-    CREATE TABLE fga.schema (
+    CREATE TABLE pgfga.schema (
         rowid BIGINT GENERATED ALWAYS AS IDENTITY,
         id UUID PRIMARY KEY DEFAULT gen_random_uuid() ,
         schema JSON NOT NULL,
         created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
     );
 
-    CREATE TABLE fga.tuple (
+    CREATE TABLE pgfga.tuple (
         rowid BIGINT GENERATED ALWAYS AS IDENTITY,
         schema_id UUID NOT NULL,
         resource_namespace VARCHAR(128) NOT NULL,
@@ -42,7 +42,7 @@ extension_sql!(
 #[pg_extern]
 fn pgfga_create_schema(schema: pgrx::Json) -> Result<Option<pgrx::Uuid>, PgFgaError> {
     Ok(Spi::get_one_with_args(
-        "INSERT INTO fga.schema (schema) VALUES ($1) RETURNING id",
+        "INSERT INTO pgfga.schema (schema) VALUES ($1) RETURNING id",
         vec![(PgBuiltInOids::JSONOID.oid(), schema.into_datum())],
     )?)
 }
@@ -83,7 +83,7 @@ fn pgfga_create_tuple(
 ) -> Result<(), PgFgaError> {
     let result = Spi::run_with_args(
         "
-        INSERT INTO fga.tuple (
+        INSERT INTO pgfga.tuple (
             schema_id,
             resource_namespace,
             resource_id,
@@ -178,7 +178,7 @@ fn pgfga_delete_tuple(
 ) -> Result<(), PgFgaError> {
     let result = Spi::run_with_args(
         "
-        DELETE FROM fga.tuple
+        DELETE FROM pgfga.tuple
         WHERE schema_id = $1
             AND resource_namespace = $2
             AND resource_id = $3

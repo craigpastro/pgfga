@@ -18,30 +18,7 @@ pub struct TupleRow {
     pub subject_action: String,
 }
 
-// TODO: probably don't need this.
 impl TupleRow {
-    // fn new(
-    //     rowid: i64,
-    //     schema_id: pgrx::Uuid,
-    //     resource_namespace: &str,
-    //     resource_id: &str,
-    //     relation: &str,
-    //     subject_namespace: &str,
-    //     subject_id: &str,
-    //     subject_action: &str,
-    // ) -> Self {
-    //     Self {
-    //         rowid: rowid,
-    //         schema_id,
-    //         resource_namespace: resource_namespace.to_string(),
-    //         resource_id: resource_id.to_string(),
-    //         relation: relation.to_string(),
-    //         subject_namespace: subject_namespace.to_string(),
-    //         subject_id: subject_id.to_string(),
-    //         subject_action: subject_action.to_string(),
-    //     }
-    // }
-
     pub fn into_tuple(
         self,
     ) -> (
@@ -91,7 +68,7 @@ impl<'a> Storage<'a> {
 
     pub fn read_schema(&self, id: pgrx::Uuid) -> Result<Option<SchemaRow>, PgFgaError> {
         let tup_table = self.client.select(
-            "SELECT * FROM fga.schema WHERE id = $1",
+            "SELECT * FROM pgfga.schema WHERE id = $1",
             Some(1),
             Some(vec![(PgBuiltInOids::UUIDOID.oid(), id.into_datum())]),
         )?;
@@ -126,7 +103,7 @@ impl<'a> Storage<'a> {
         subject_action: &str,
     ) -> Result<Option<TupleRow>, PgFgaError> {
         let query = "
-        SELECT * FROM fga.tuple
+        SELECT * FROM pgfga.tuple
         WHERE schema_id = $1
             AND resource_namespace = $2
             AND resource_id = $3
@@ -137,7 +114,7 @@ impl<'a> Storage<'a> {
         ";
 
         let args = vec![
-            (PgBuiltInOids::TEXTOID.oid(), schema_id.into_datum()),
+            (PgBuiltInOids::UUIDOID.oid(), schema_id.into_datum()),
             (
                 PgBuiltInOids::TEXTOID.oid(),
                 resource_namespace.into_datum(),
@@ -196,7 +173,7 @@ impl<'a> Storage<'a> {
         subject_id: &str,
         subject_action: &str,
     ) -> Result<Vec<TupleRow>, PgFgaError> {
-        let mut query = "SELECT * FROM fga.tuple WHERE schema_id = $1".to_string();
+        let mut query = "SELECT * FROM pgfga.tuple WHERE schema_id = $1".to_string();
         let mut args = vec![(PgBuiltInOids::UUIDOID.oid(), schema_id.into_datum())];
 
         if !resource_namespace.is_empty() {
@@ -270,7 +247,7 @@ impl<'a> Storage<'a> {
         resource_id: &str,
         relation: &str,
     ) -> Result<Vec<TupleRow>, PgFgaError> {
-        let mut query = "SELECT * FROM fga.tuple WHERE schema_id = $1".to_string();
+        let mut query = "SELECT * FROM pgfga.tuple WHERE schema_id = $1".to_string();
         let mut args = vec![(PgBuiltInOids::UUIDOID.oid(), schema_id.into_datum())];
 
         if !resource_namespace.is_empty() {

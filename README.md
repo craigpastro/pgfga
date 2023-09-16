@@ -1,25 +1,53 @@
 # Postgres Fine-Grained Authorization (pgfga)
 
-An experimental Postgres extension for doing fine-grained access (fga) within
-Postgres.
+## What is this?
+
+This is an experimental Postgres extension for doing fine-grained access (fga)
+within Postgres.
+
+This is a WIP. There are no tests (I plan on adding some). I don't know if it
+works. I am not very good with Rust, nor Postgres. But it is fun.
+
+## Usage
 
 ```sql
-select * from pgfga_create_schema('{"namespaces":{"document":{"relations":{"viewer":[{"namespace":"user"}]},"permissions":{"can_view":{"union":[{"computedUserset":"viewer"},{"tupleToUserset":["parent","can_view"]}]}}},"user":{"relations":{},"permissions":{}}}}');
+pgfga=# select * from pgfga_create_schema('{"namespaces":{"document":{"relations":{"viewer":[{"namespace":"user"}]},"permissions":{"can_view":{"union":[{"computedUserset":"viewer"},{"tupleToUserset":["parent","can_view"]}]}}},"user":{"relations":{},"permissions":{}}}}');
+         pgfga_create_schema          
+--------------------------------------
+ 31c1cf4f-f1de-42fb-8e24-9f407805dadf
 
-select * from pgfga_read_schema('cf64b948-440c-485b-9bd6-a7bd7435dea2');
 
-select pgfga_create_tuple('cf64b948-440c-485b-9bd6-a7bd7435dea2', 'foo', 'document', '1', 'viewer', 'user', 'anya');
+pgfga=# select pgfga_create_tuple('31c1cf4f-f1de-42fb-8e24-9f407805dadf', 'document', '1', 'viewer', 'user', 'anya', '');
+ pgfga_create_tuple 
+--------------------
+ 
+(1 row)
 
-select * from pgfga_read_tuples('cf64b948-440c-485b-9bd6-a7bd7435dea2', '', '', '', '', '', '');
-
-select pgfga_delete_tuple('cf64b948-440c-485b-9bd6-a7bd7435dea2', 'foo', 'document', '1', 'viewer', 'user', 'anya');
-
-select * from pgfga_check('cf64b948-440c-485b-9bd6-a7bd7435dea2', '', '', '', '', '', '');
+pgfga=# select * from pgfga_check('31c1cf4f-f1de-42fb-8e24-9f407805dadf', 'document', '1', 'viewer', 'user', 'anya', '');
+ pgfga_check 
+-------------
+ t
+(1 row)
 ```
+
+## Available functions
+
+See [./src/lib.rs](./src/lib.rs) for type signatures.
+
+- `pgfga_read_schema`
+- `pgfga_read_schema`
+- `pgfga_create_tuple`
+- `pgfga_read_tuples`
+- `pgfga_delete_tuple`
+- `pgfga_check`
 
 ## TODOs
 
-- read all schemas
-- create many tuples
-- delete many tuples
-- check
+- Tests
+- Documentation
+- Clean up code
+- Client library to make this easier to use
+- Read all schemas function
+- Create many tuples function
+- Delete many tuples function
+- ?

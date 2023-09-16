@@ -58,14 +58,7 @@ impl<'a> Checker<'a> {
             return Err(PgFgaError::MaxDepth);
         }
 
-        let is_relation = self
-            .schema
-            .namespaces
-            .get(resource_namespace)
-            .and_then(|ns| ns.relations.get(action))
-            .is_some();
-
-        if is_relation {
+        if self.is_relation(resource_namespace, action) {
             // If the action is a relation we can attempt a direct check.
             if let Some(_) = self.storage.read_tuple(
                 self.schema_id,
@@ -97,9 +90,12 @@ impl<'a> Checker<'a> {
                     subject_id,
                     subject_action,
                     depth + 1,
-                )?;
-                if result {
-                    return Ok(true);
+                );
+
+                if let Ok(val) = result {
+                    if val {
+                        return Ok(true);
+                    }
                 }
             }
         }
@@ -128,53 +124,171 @@ impl<'a> Checker<'a> {
 
     fn check_rewrite(
         &self,
-        _resource_namespace: &str,
-        _resource_id: &str,
-        _subject_namespace: &str,
-        _subject_id: &str,
-        _subject_action: &str,
-        _rewrite: &Rewrite,
-        _depth: i64,
+        resource_namespace: &str,
+        resource_id: &str,
+        subject_namespace: &str,
+        subject_id: &str,
+        subject_action: &str,
+        rewrite: &Rewrite,
+        depth: i64,
     ) -> Result<bool, PgFgaError> {
-        Ok(true)
+        match rewrite {
+            Rewrite::ComputedUserset(computed_userset) => self.check_cu(
+                resource_namespace,
+                resource_id,
+                subject_namespace,
+                subject_id,
+                subject_action,
+                computed_userset,
+                depth,
+            ),
+            Rewrite::TupleToUserset(tupleset, computed_userset) => self.check_ttu(
+                resource_namespace,
+                resource_id,
+                subject_namespace,
+                subject_id,
+                subject_action,
+                &tupleset,
+                &computed_userset,
+                depth,
+            ),
+            Rewrite::Union(rewrites) => self.check_union(
+                resource_namespace,
+                resource_id,
+                subject_namespace,
+                subject_id,
+                subject_action,
+                rewrites,
+                depth,
+            ),
+        }
     }
 
     fn check_cu(
         &self,
-        _resource_namespace: &str,
-        _resource_id: &str,
-        _action: &str,
-        _subject_namespace: &str,
-        _subject_id: &str,
-        _subject_action: &str,
-        _depth: i64,
+        resource_namespace: &str,
+        resource_id: &str,
+        subject_namespace: &str,
+        subject_id: &str,
+        subject_action: &str,
+        computed_userset: &str,
+        depth: i64,
     ) -> Result<bool, PgFgaError> {
-        Ok(false)
+        self.check_with_depth(
+            resource_namespace,
+            resource_id,
+            computed_userset,
+            subject_namespace,
+            subject_id,
+            subject_action,
+            depth,
+        )
     }
 
     fn check_ttu(
         &self,
-        _resource_namespace: &str,
-        _resource_id: &str,
-        _action: &str,
-        _subject_namespace: &str,
-        _subject_id: &str,
-        _subject_action: &str,
-        _depth: i64,
+        resource_namespace: &str,
+        resource_id: &str,
+        subject_namespace: &str,
+        subject_id: &str,
+        subject_action: &str,
+        tupleset: &str,
+        computed_userset: &str,
+        depth: i64,
     ) -> Result<bool, PgFgaError> {
+        let tuples = self.storage.read_tuples(
+            self.schema_id,
+            resource_namespace,
+            resource_id,
+            tupleset,
+            "",
+            "",
+            "",
+        )?;
+
+        for tuple in tuples {
+            let new_resource_namespace = tuple.subject_namespace.as_str();
+            let new_resource_id = tuple.subject_id.as_str();
+            let new_resource_action = tuple.subject_action.as_str();
+
+            // If computed_userset is not actually a relation or permission
+            // in new_resource_namespace then there is nothing to do so
+            // skip it.
+            if !self.is_relation(&new_resource_namespace, computed_userset)
+                && !self.is_permission(&new_resource_namespace, tupleset)
+            {
+                continue;
+            }
+
+            // If the subject has a nonempty relation (new_resource_action)
+            // which does not match the computed_userset then skip it.
+            if new_resource_action != "" && new_resource_action != computed_userset {
+                continue;
+            }
+
+            let result = self.check_with_depth(
+                new_resource_namespace,
+                new_resource_id,
+                computed_userset,
+                subject_namespace,
+                subject_id,
+                subject_action,
+                depth + 1,
+            );
+
+            if let Ok(val) = result {
+                if val {
+                    return Ok(true);
+                }
+            }
+        }
+
         Ok(false)
     }
 
     fn check_union(
         &self,
-        _resource_namespace: &str,
-        _resource_id: &str,
-        _action: &str,
-        _subject_namespace: &str,
-        _subject_id: &str,
-        _subject_action: &str,
-        _depth: i64,
+        resource_namespace: &str,
+        resource_id: &str,
+        subject_namespace: &str,
+        subject_id: &str,
+        subject_action: &str,
+        rewrites: &Vec<Rewrite>,
+        depth: i64,
     ) -> Result<bool, PgFgaError> {
+        for rewrite in rewrites {
+            let result = self.check_rewrite(
+                resource_namespace,
+                resource_id,
+                subject_namespace,
+                subject_id,
+                subject_action,
+                rewrite,
+                depth + 1,
+            );
+
+            if let Ok(val) = result {
+                if val {
+                    return Ok(true);
+                }
+            }
+        }
         Ok(false)
+    }
+
+    fn is_relation(&self, namespace: &str, action: &str) -> bool {
+        self.schema
+            .namespaces
+            .get(namespace)
+            .and_then(|ns| ns.relations.get(action))
+            .is_some()
+    }
+
+    fn is_permission(&self, namespace: &str, action: &str) -> bool {
+        self.schema
+            .namespaces
+            .get(namespace)
+            .and_then(|ns| ns.permissions.get(action))
+            .is_some()
     }
 }
