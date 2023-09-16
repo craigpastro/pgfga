@@ -51,4 +51,5 @@ See [./src/lib.rs](./src/lib.rs) for type signatures.
 - Read all schemas function
 - Create many tuples function
 - Delete many tuples function
+- Function signatures are out of control. Do I need more structs?
 - ?

@@ -132,6 +132,10 @@ impl<'a> Checker<'a> {
         rewrite: &Rewrite,
         depth: i64,
     ) -> Result<bool, PgFgaError> {
+        if depth == MAX_DEPTH {
+            return Err(PgFgaError::MaxDepth);
+        }
+
         match rewrite {
             Rewrite::ComputedUserset(computed_userset) => self.check_cu(
                 resource_namespace,
