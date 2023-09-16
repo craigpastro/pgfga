@@ -12,19 +12,23 @@ good with Rust, nor Postgres.
 ## Usage
 
 ```sql
-pgfga=# select * from pgfga_create_schema('{"namespaces":{"document":{"relations":{"viewer":[{"namespace":"user"}]},"permissions":{"can_view":{"union":[{"computedUserset":"viewer"},{"tupleToUserset":["parent","can_view"]}]}}},"user":{"relations":{},"permissions":{}}}}');
+$ cargo pgrx run pg15
+
+pgfga=# CREATE EXTENSION pgfga;
+
+pgfga=# SELECT * FROM pgfga_create_schema('{"namespaces":{"document":{"relations":{"viewer":[{"namespace":"user"}]},"permissions":{"can_view":{"union":[{"computedUserset":"viewer"},{"tupleToUserset":["parent","can_view"]}]}}},"user":{"relations":{},"permissions":{}}}}');
          pgfga_create_schema          
 --------------------------------------
  31c1cf4f-f1de-42fb-8e24-9f407805dadf
 
 
-pgfga=# select pgfga_create_tuple('31c1cf4f-f1de-42fb-8e24-9f407805dadf', 'document', '1', 'viewer', 'user', 'anya', '');
+pgfga=# SELECT pgfga_create_tuple('31c1cf4f-f1de-42fb-8e24-9f407805dadf', 'document', '1', 'viewer', 'user', 'anya', '');
  pgfga_create_tuple 
 --------------------
 
 (1 row)
 
-pgfga=# select * from pgfga_check('31c1cf4f-f1de-42fb-8e24-9f407805dadf', 'document', '1', 'viewer', 'user', 'anya', '');
+pgfga=# SELECT * FROM pgfga_check('31c1cf4f-f1de-42fb-8e24-9f407805dadf', 'document', '1', 'viewer', 'user', 'anya', '');
  pgfga_check 
 -------------
  t
