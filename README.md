@@ -2,8 +2,8 @@
 
 ## What is this?
 
-This is an experimental Postgres extension for doing fine-grained access (fga)
-within Postgres.
+This is an experimental Postgres extension for doing fine-grained authorization
+(fga).
 
 This is a WIP. There is no documentation. There are no tests. There are no
 validations. (I plan on adding some.) I don't know if it works. I am not very
@@ -49,6 +49,7 @@ See [./src/lib.rs](./src/lib.rs) for type signatures.
 - Clean up code
 - Add the proper indices
 - Client library to make this easier to use
+- Add intersection and exclusion to the schema
 - Read all schemas function
 - Create many tuples function
 - Delete many tuples function

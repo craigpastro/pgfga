@@ -1,7 +1,7 @@
 use crate::error::PgFgaError;
 use crate::schema::Schema;
 use pgrx::prelude::*;
-use pgrx::spi::SpiClient;
+use pgrx::spi::{SpiClient, SpiHeapTupleData};
 
 pub struct Storage<'a> {
     client: SpiClient<'a>,
@@ -41,6 +41,33 @@ impl TupleRow {
             self.subject_id,
             self.subject_action,
         )
+    }
+}
+
+impl<'a> TryFrom<SpiHeapTupleData<'a>> for TupleRow {
+    type Error = spi::Error;
+
+    fn try_from(row: SpiHeapTupleData<'a>) -> Result<Self, Self::Error> {
+        Ok(TupleRow {
+            rowid: row["rowid"].value()?.expect("no rowid"),
+            schema_id: row["schema_id"]
+                .value::<pgrx::Uuid>()?
+                .expect("no schema_id"),
+            resource_namespace: row["resource_namespace"]
+                .value::<String>()?
+                .expect("no resource_namespace"),
+            resource_id: row["resource_id"]
+                .value::<String>()?
+                .expect("no resource_id"),
+            relation: row["relation"].value::<String>()?.expect("no relation"),
+            subject_namespace: row["subject_namespace"]
+                .value::<String>()?
+                .expect("no subject_namespace"),
+            subject_id: row["subject_id"].value::<String>()?.expect("no subject_id"),
+            subject_action: row["subject_action"]
+                .value::<String>()?
+                .expect("no subject_action"),
+        })
     }
 }
 
@@ -185,34 +212,11 @@ impl<'a> Storage<'a> {
             (PgBuiltInOids::TEXTOID.oid(), subject_action.into_datum()),
         ];
 
-        // TODO: do this with maps and such.
-        let tup_table = self.client.select(query, Some(1), Some(args))?;
-
-        let mut results = Vec::new();
-        for row in tup_table {
-            let tuple_row = TupleRow {
-                rowid: row["rowid"].value()?.expect("no rowid"),
-                schema_id: row["schema_id"]
-                    .value::<pgrx::Uuid>()?
-                    .expect("no schema_id"),
-                resource_namespace: row["resource_namespace"]
-                    .value::<String>()?
-                    .expect("no resource_namespace"),
-                resource_id: row["resource_id"]
-                    .value::<String>()?
-                    .expect("no resource_id"),
-                relation: row["relation"].value::<String>()?.expect("no relation"),
-                subject_namespace: row["subject_namespace"]
-                    .value::<String>()?
-                    .expect("no subject_namespace"),
-                subject_id: row["subject_id"].value::<String>()?.expect("no subject_id"),
-                subject_action: row["subject_action"]
-                    .value::<String>()?
-                    .expect("no subject_action"),
-            };
-
-            results.push(tuple_row)
-        }
+        let mut results = self
+            .client
+            .select(query, None, Some(args))?
+            .map(|row| TupleRow::try_from(row))
+            .collect::<Result<Vec<_>, spi::Error>>()?;
 
         Ok(if !results.is_empty() {
             results.pop()
@@ -268,33 +272,11 @@ impl<'a> Storage<'a> {
             query.push_str(&format!(" AND subject_action = ${}", args.len()));
         }
 
-        let tup_table = self.client.select(&query, None, Some(args))?;
-
-        let mut results = Vec::with_capacity(tup_table.len());
-        for row in tup_table {
-            let tuple_row = TupleRow {
-                rowid: row["rowid"].value()?.expect("no rowid"),
-                schema_id: row["schema_id"]
-                    .value::<pgrx::Uuid>()?
-                    .expect("no schema_id"),
-                resource_namespace: row["resource_namespace"]
-                    .value::<String>()?
-                    .expect("no resource_namespace"),
-                resource_id: row["resource_id"]
-                    .value::<String>()?
-                    .expect("no resource_id"),
-                relation: row["relation"].value::<String>()?.expect("no relation"),
-                subject_namespace: row["subject_namespace"]
-                    .value::<String>()?
-                    .expect("no subject_namespace"),
-                subject_id: row["subject_id"].value::<String>()?.expect("no subject_id"),
-                subject_action: row["subject_action"]
-                    .value::<String>()?
-                    .expect("no subject_action"),
-            };
-
-            results.push(tuple_row)
-        }
+        let results = self
+            .client
+            .select(&query, None, Some(args))?
+            .map(|row| TupleRow::try_from(row))
+            .collect::<Result<Vec<_>, spi::Error>>()?;
 
         Ok(results)
     }
@@ -327,33 +309,11 @@ impl<'a> Storage<'a> {
             query.push_str(&format!(" AND relation = ${}", args.len()));
         }
 
-        let tup_table = self.client.select(&query, None, Some(args))?;
-
-        let mut results = Vec::with_capacity(tup_table.len());
-        for row in tup_table {
-            let tuple_row = TupleRow {
-                rowid: row["rowid"].value()?.expect("no rowid"),
-                schema_id: row["schema_id"]
-                    .value::<pgrx::Uuid>()?
-                    .expect("no schema_id"),
-                resource_namespace: row["resource_namespace"]
-                    .value::<String>()?
-                    .expect("no resource_namespace"),
-                resource_id: row["resource_id"]
-                    .value::<String>()?
-                    .expect("no resource_id"),
-                relation: row["relation"].value::<String>()?.expect("no relation"),
-                subject_namespace: row["subject_namespace"]
-                    .value::<String>()?
-                    .expect("no subject_namespace"),
-                subject_id: row["subject_id"].value::<String>()?.expect("no subject_id"),
-                subject_action: row["subject_action"]
-                    .value::<String>()?
-                    .expect("no subject_action"),
-            };
-
-            results.push(tuple_row)
-        }
+        let results = self
+            .client
+            .select(&query, None, Some(args))?
+            .map(|row| TupleRow::try_from(row))
+            .collect::<Result<Vec<_>, spi::Error>>()?;
 
         Ok(results)
     }
