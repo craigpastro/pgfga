@@ -1,8 +1,8 @@
 use crate::error::PgFgaError;
-use crate::schema::Schema;
+use crate::schema::{Rewrite, Schema};
 use crate::storage::Storage;
 
-pub const MAX_DEPTH: u64 = 25;
+pub const MAX_DEPTH: i64 = 25;
 
 pub struct Checker<'a> {
     storage: Storage<'a>,
@@ -52,7 +52,7 @@ impl<'a> Checker<'a> {
         subject_namespace: &str,
         subject_id: &str,
         subject_action: &str,
-        depth: u64,
+        depth: i64,
     ) -> Result<bool, PgFgaError> {
         if depth == MAX_DEPTH {
             return Err(PgFgaError::MaxDepth);
@@ -65,8 +65,8 @@ impl<'a> Checker<'a> {
             .and_then(|ns| ns.relations.get(action))
             .is_some();
 
-        // If the action is a relation we can attempt a direct check.
         if is_relation {
+            // If the action is a relation we can attempt a direct check.
             if let Some(_) = self.storage.read_tuple(
                 self.schema_id,
                 resource_namespace,
@@ -76,14 +76,66 @@ impl<'a> Checker<'a> {
                 subject_id,
                 subject_action,
             )? {
+                // We found it.
                 return Ok(true);
-            } else {
-                return Ok(false);
+            }
+
+            // Now let's take a look at subject sets.
+            let tuples = self.storage.read_subjectset_tuples(
+                self.schema_id,
+                resource_namespace,
+                resource_id,
+                action,
+            )?;
+
+            for tuple in tuples {
+                let result = self.check_with_depth(
+                    &tuple.subject_namespace,
+                    &tuple.subject_id,
+                    &tuple.subject_action,
+                    &tuple.subject_namespace,
+                    subject_id,
+                    subject_action,
+                    depth + 1,
+                )?;
+                if result {
+                    return Ok(true);
+                }
             }
         }
 
-        // self.schema.namespaces.get(resource_namespace).map(|ns| ns.)
+        // Now let's take a look at permissions
+        let rw = self
+            .schema
+            .namespaces
+            .get(resource_namespace)
+            .and_then(|ns| ns.permissions.get(action));
 
+        if let Some(rewrite) = rw {
+            return self.check_rewrite(
+                resource_namespace,
+                resource_id,
+                subject_namespace,
+                subject_id,
+                subject_action,
+                rewrite,
+                depth,
+            );
+        }
+
+        Ok(false)
+    }
+
+    fn check_rewrite(
+        &self,
+        _resource_namespace: &str,
+        _resource_id: &str,
+        _subject_namespace: &str,
+        _subject_id: &str,
+        _subject_action: &str,
+        _rewrite: &Rewrite,
+        _depth: i64,
+    ) -> Result<bool, PgFgaError> {
         Ok(true)
     }
 
@@ -95,7 +147,7 @@ impl<'a> Checker<'a> {
         _subject_namespace: &str,
         _subject_id: &str,
         _subject_action: &str,
-        _depth: u64,
+        _depth: i64,
     ) -> Result<bool, PgFgaError> {
         Ok(false)
     }
@@ -108,7 +160,7 @@ impl<'a> Checker<'a> {
         _subject_namespace: &str,
         _subject_id: &str,
         _subject_action: &str,
-        _depth: u64,
+        _depth: i64,
     ) -> Result<bool, PgFgaError> {
         Ok(false)
     }
@@ -121,7 +173,7 @@ impl<'a> Checker<'a> {
         _subject_namespace: &str,
         _subject_id: &str,
         _subject_action: &str,
-        _depth: u64,
+        _depth: i64,
     ) -> Result<bool, PgFgaError> {
         Ok(false)
     }

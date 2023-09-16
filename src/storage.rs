@@ -8,14 +8,14 @@ pub struct Storage<'a> {
 }
 
 pub struct TupleRow {
-    rowid: i64,
-    schema_id: pgrx::Uuid,
-    resource_namespace: String,
-    resource_id: String,
-    relation: String,
-    subject_namespace: String,
-    subject_id: String,
-    subject_action: String,
+    pub rowid: i64,
+    pub schema_id: pgrx::Uuid,
+    pub resource_namespace: String,
+    pub resource_id: String,
+    pub relation: String,
+    pub subject_namespace: String,
+    pub subject_id: String,
+    pub subject_action: String,
 }
 
 // TODO: probably don't need this.
@@ -68,10 +68,10 @@ impl TupleRow {
 }
 
 pub struct SchemaRow {
-    rowid: i64,
-    id: pgrx::Uuid,
-    schema: pgrx::Json,
-    created_at: pgrx::TimestampWithTimeZone,
+    pub rowid: i64,
+    pub id: pgrx::Uuid,
+    pub schema: pgrx::Json,
+    pub created_at: pgrx::TimestampWithTimeZone,
 }
 
 impl SchemaRow {

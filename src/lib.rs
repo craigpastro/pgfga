@@ -36,11 +36,11 @@ extension_sql!(
     -- TODO: add indices!
 
     "#,
-    name = "initialize_pg_fga"
+    name = "initialize_pgfga"
 );
 
 #[pg_extern]
-fn pg_fga_create_schema(schema: pgrx::Json) -> Result<Option<pgrx::Uuid>, PgFgaError> {
+fn pgfga_create_schema(schema: pgrx::Json) -> Result<Option<pgrx::Uuid>, PgFgaError> {
     Ok(Spi::get_one_with_args(
         "INSERT INTO fga.schema (schema) VALUES ($1) RETURNING id",
         vec![(PgBuiltInOids::JSONOID.oid(), schema.into_datum())],
@@ -48,7 +48,7 @@ fn pg_fga_create_schema(schema: pgrx::Json) -> Result<Option<pgrx::Uuid>, PgFgaE
 }
 
 #[pg_extern]
-fn pg_fga_read_schema(
+fn pgfga_read_schema(
     id: pgrx::Uuid,
 ) -> Result<
     TableIterator<
@@ -72,7 +72,7 @@ fn pg_fga_read_schema(
 }
 
 #[pg_extern]
-fn pg_fga_create_tuple(
+fn pgfga_create_tuple(
     schema_id: pgrx::Uuid,
     resource_namespace: &str,
     resource_id: &str,
@@ -115,7 +115,7 @@ fn pg_fga_create_tuple(
 }
 
 #[pg_extern]
-fn pg_fga_read_tuples(
+fn pgfga_read_tuples(
     schema_id: pgrx::Uuid,
     resource_namespace: &str,
     resource_id: &str,
@@ -167,7 +167,7 @@ fn pg_fga_read_tuples(
 }
 
 #[pg_extern]
-fn pg_fga_delete_tuple(
+fn pgfga_delete_tuple(
     schema_id: pgrx::Uuid,
     resource_namespace: &str,
     resource_id: &str,
@@ -208,7 +208,7 @@ fn pg_fga_delete_tuple(
 }
 
 #[pg_extern]
-fn pg_fga_check(
+fn pgfga_check(
     schema_id: pgrx::Uuid,
     resource_namespace: &str,
     resource_id: &str,
@@ -230,8 +230,8 @@ fn pg_fga_check(
 }
 
 #[pg_extern]
-fn hello_pg_fga() -> &'static str {
-    "Hello, pg_fga"
+fn hello_pgfga() -> &'static str {
+    "Hello, pgfga"
 }
 
 #[cfg(any(test, feature = "pg_test"))]
@@ -240,8 +240,8 @@ mod tests {
     use pgrx::prelude::*;
 
     #[pg_test]
-    fn test_hello_pg_fga() {
-        assert_eq!("Hello, pg_fga", crate::hello_pg_fga());
+    fn test_hello_pgfga() {
+        assert_eq!("Hello, pgfga", crate::hello_pgfga());
     }
 }
 

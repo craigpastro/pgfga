@@ -1,5 +1,5 @@
-comment = 'pg_fga:  Created by pgrx'
+comment = 'pgfga:  Created by pgrx'
 default_version = '@CARGO_VERSION@'
-module_pathname = '$libdir/pg_fga'
+module_pathname = '$libdir/pgfga'
 relocatable = false
 superuser = true
