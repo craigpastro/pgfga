@@ -5,9 +5,9 @@
 This is an experimental Postgres extension for doing fine-grained access (fga)
 within Postgres.
 
-This is a WIP. There is no documentation. There are no tests. (I plan on adding
-both). I don't know if it works. I am not very good with Rust, nor Postgres. But
-it is fun.
+This is a WIP. There is no documentation. There are no tests. There are no
+validations. (I plan on adding some.) I don't know if it works. I am not very
+good with Rust, nor Postgres.
 
 ## Usage
 
@@ -21,7 +21,7 @@ pgfga=# select * from pgfga_create_schema('{"namespaces":{"document":{"relations
 pgfga=# select pgfga_create_tuple('31c1cf4f-f1de-42fb-8e24-9f407805dadf', 'document', '1', 'viewer', 'user', 'anya', '');
  pgfga_create_tuple 
 --------------------
- 
+
 (1 row)
 
 pgfga=# select * from pgfga_check('31c1cf4f-f1de-42fb-8e24-9f407805dadf', 'document', '1', 'viewer', 'user', 'anya', '');

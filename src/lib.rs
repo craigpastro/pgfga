@@ -77,7 +77,7 @@ fn pgfga_create_tuple(
     subject_namespace: &str,
     subject_id: &str,
     subject_action: default!(&str, "''"),
-) -> Result<Option<i64>, PgFgaError> {
+) -> Result<(), PgFgaError> {
     Spi::connect(|client| {
         Storage::new(client).create_tuple(
             schema_id,

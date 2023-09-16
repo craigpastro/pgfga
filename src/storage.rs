@@ -115,7 +115,7 @@ impl<'a> Storage<'a> {
         subject_namespace: &str,
         subject_id: &str,
         subject_action: &str,
-    ) -> Result<Option<i64>, PgFgaError> {
+    ) -> Result<(), PgFgaError> {
         let query = "
         INSERT INTO pgfga.tuple (
             schema_id,
@@ -146,13 +146,9 @@ impl<'a> Storage<'a> {
             (PgBuiltInOids::VARCHAROID.oid(), subject_action.into_datum()),
         ];
 
-        let result = self
-            .client
-            .update(query, Some(1), Some(args))?
-            .first()
-            .get_one::<i64>()?;
+        self.client.update(query, Some(1), Some(args))?;
 
-        Ok(result)
+        Ok(())
     }
 
     pub fn read_tuple(
