@@ -60,15 +60,19 @@ impl<'a> Checker<'a> {
 
         if self.is_relation(resource_namespace, action) {
             // If the action is a relation we can attempt a direct check.
-            if let Some(_) = self.storage.read_tuple(
-                self.schema_id,
-                resource_namespace,
-                resource_id,
-                action,
-                subject_namespace,
-                subject_id,
-                subject_action,
-            )? {
+            if self
+                .storage
+                .read_tuple(
+                    self.schema_id,
+                    resource_namespace,
+                    resource_id,
+                    action,
+                    subject_namespace,
+                    subject_id,
+                    subject_action,
+                )?
+                .is_some()
+            {
                 // We found it.
                 return Ok(true);
             }
@@ -152,8 +156,8 @@ impl<'a> Checker<'a> {
                 subject_namespace,
                 subject_id,
                 subject_action,
-                &tupleset,
-                &computed_userset,
+                tupleset,
+                computed_userset,
                 depth,
             ),
             Rewrite::Union(rewrites) => self.check_union(
@@ -218,15 +222,15 @@ impl<'a> Checker<'a> {
             // If computed_userset is not actually a relation or permission
             // in new_resource_namespace then there is nothing to do so
             // skip it.
-            if !self.is_relation(&new_resource_namespace, computed_userset)
-                && !self.is_permission(&new_resource_namespace, tupleset)
+            if !self.is_relation(new_resource_namespace, computed_userset)
+                && !self.is_permission(new_resource_namespace, tupleset)
             {
                 continue;
             }
 
             // If the subject has a nonempty relation (new_resource_action)
             // which does not match the computed_userset then skip it.
-            if new_resource_action != "" && new_resource_action != computed_userset {
+            if !new_resource_action.is_empty() && new_resource_action != computed_userset {
                 continue;
             }
 

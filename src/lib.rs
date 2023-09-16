@@ -41,10 +41,7 @@ extension_sql!(
 
 #[pg_extern]
 fn pgfga_create_schema(schema: pgrx::Json) -> Result<Option<pgrx::Uuid>, PgFgaError> {
-    Ok(Spi::get_one_with_args(
-        "INSERT INTO pgfga.schema (schema) VALUES ($1) RETURNING id",
-        vec![(PgBuiltInOids::JSONOID.oid(), schema.into_datum())],
-    )?)
+    Spi::connect(|client| Storage::new(client).create_schema(schema))
 }
 
 #[pg_extern]
@@ -80,38 +77,18 @@ fn pgfga_create_tuple(
     subject_namespace: &str,
     subject_id: &str,
     subject_action: default!(&str, "''"),
-) -> Result<(), PgFgaError> {
-    let result = Spi::run_with_args(
-        "
-        INSERT INTO pgfga.tuple (
+) -> Result<Option<i64>, PgFgaError> {
+    Spi::connect(|client| {
+        Storage::new(client).create_tuple(
             schema_id,
             resource_namespace,
             resource_id,
             relation,
             subject_namespace,
             subject_id,
-            subject_action
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING rowid
-        ",
-        Some(vec![
-            (PgBuiltInOids::UUIDOID.oid(), schema_id.into_datum()),
-            (
-                PgBuiltInOids::VARCHAROID.oid(),
-                resource_namespace.into_datum(),
-            ),
-            (PgBuiltInOids::VARCHAROID.oid(), resource_id.into_datum()),
-            (PgBuiltInOids::VARCHAROID.oid(), relation.into_datum()),
-            (
-                PgBuiltInOids::VARCHAROID.oid(),
-                subject_namespace.into_datum(),
-            ),
-            (PgBuiltInOids::VARCHAROID.oid(), subject_id.into_datum()),
-            (PgBuiltInOids::VARCHAROID.oid(), subject_action.into_datum()),
-        ]),
-    );
-
-    Ok(result?)
+            subject_action,
+        )
+    })
 }
 
 #[pg_extern]
@@ -211,6 +188,7 @@ fn pgfga_check(
     })
 }
 
+// TODO: delete when I actually write some tests.
 #[pg_extern]
 fn hello_pgfga() -> &'static str {
     "Hello, pgfga"

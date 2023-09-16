@@ -66,6 +66,20 @@ impl<'a> Storage<'a> {
         Self { client }
     }
 
+    pub fn create_schema(&mut self, schema: pgrx::Json) -> Result<Option<pgrx::Uuid>, PgFgaError> {
+        let result = self
+            .client
+            .update(
+                "INSERT INTO pgfga.schema (schema) VALUES ($1) RETURNING id",
+                None,
+                Some(vec![(PgBuiltInOids::JSONOID.oid(), schema.into_datum())]),
+            )?
+            .first()
+            .get_one::<pgrx::Uuid>()?;
+
+        Ok(result)
+    }
+
     pub fn read_schema(&self, id: pgrx::Uuid) -> Result<Option<SchemaRow>, PgFgaError> {
         let tup_table = self.client.select(
             "SELECT * FROM pgfga.schema WHERE id = $1",
@@ -90,6 +104,55 @@ impl<'a> Storage<'a> {
         } else {
             None
         })
+    }
+
+    pub fn create_tuple(
+        &mut self,
+        schema_id: pgrx::Uuid,
+        resource_namespace: &str,
+        resource_id: &str,
+        relation: &str,
+        subject_namespace: &str,
+        subject_id: &str,
+        subject_action: &str,
+    ) -> Result<Option<i64>, PgFgaError> {
+        let query = "
+        INSERT INTO pgfga.tuple (
+            schema_id,
+            resource_namespace,
+            resource_id,
+            relation,
+            subject_namespace,
+            subject_id,
+            subject_action
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+        ON CONFLICT DO NOTHING
+        RETURNING rowid
+        ";
+
+        let args = vec![
+            (PgBuiltInOids::UUIDOID.oid(), schema_id.into_datum()),
+            (
+                PgBuiltInOids::VARCHAROID.oid(),
+                resource_namespace.into_datum(),
+            ),
+            (PgBuiltInOids::VARCHAROID.oid(), resource_id.into_datum()),
+            (PgBuiltInOids::VARCHAROID.oid(), relation.into_datum()),
+            (
+                PgBuiltInOids::VARCHAROID.oid(),
+                subject_namespace.into_datum(),
+            ),
+            (PgBuiltInOids::VARCHAROID.oid(), subject_id.into_datum()),
+            (PgBuiltInOids::VARCHAROID.oid(), subject_action.into_datum()),
+        ];
+
+        let result = self
+            .client
+            .update(query, Some(1), Some(args))?
+            .first()
+            .get_one::<i64>()?;
+
+        Ok(result)
     }
 
     pub fn read_tuple(
@@ -240,45 +303,6 @@ impl<'a> Storage<'a> {
         Ok(results)
     }
 
-    pub fn delete_tuple(
-        &mut self,
-        schema_id: pgrx::Uuid,
-        resource_namespace: &str,
-        resource_id: &str,
-        relation: &str,
-        subject_namespace: &str,
-        subject_id: &str,
-        subject_action: &str,
-    ) -> Result<(), PgFgaError> {
-        let query = "
-        DELETE FROM pgfga.tuple
-        WHERE schema_id = $1
-            AND resource_namespace = $2
-            AND resource_id = $3
-            AND relation = $4
-            AND subject_namespace = $5
-            AND subject_id = $6
-            AND subject_action = $7
-        ";
-
-        let args = vec![
-            (PgBuiltInOids::UUIDOID.oid(), schema_id.into_datum()),
-            (
-                PgBuiltInOids::TEXTOID.oid(),
-                resource_namespace.into_datum(),
-            ),
-            (PgBuiltInOids::TEXTOID.oid(), resource_id.into_datum()),
-            (PgBuiltInOids::TEXTOID.oid(), relation.into_datum()),
-            (PgBuiltInOids::TEXTOID.oid(), subject_namespace.into_datum()),
-            (PgBuiltInOids::TEXTOID.oid(), subject_id.into_datum()),
-            (PgBuiltInOids::TEXTOID.oid(), subject_action.into_datum()),
-        ];
-
-        self.client.update(query, Some(1), Some(args))?;
-
-        Ok(())
-    }
-
     pub fn read_subjectset_tuples(
         &self,
         schema_id: pgrx::Uuid,
@@ -336,5 +360,44 @@ impl<'a> Storage<'a> {
         }
 
         Ok(results)
+    }
+
+    pub fn delete_tuple(
+        &mut self,
+        schema_id: pgrx::Uuid,
+        resource_namespace: &str,
+        resource_id: &str,
+        relation: &str,
+        subject_namespace: &str,
+        subject_id: &str,
+        subject_action: &str,
+    ) -> Result<(), PgFgaError> {
+        let query = "
+        DELETE FROM pgfga.tuple
+        WHERE schema_id = $1
+            AND resource_namespace = $2
+            AND resource_id = $3
+            AND relation = $4
+            AND subject_namespace = $5
+            AND subject_id = $6
+            AND subject_action = $7
+        ";
+
+        let args = vec![
+            (PgBuiltInOids::UUIDOID.oid(), schema_id.into_datum()),
+            (
+                PgBuiltInOids::TEXTOID.oid(),
+                resource_namespace.into_datum(),
+            ),
+            (PgBuiltInOids::TEXTOID.oid(), resource_id.into_datum()),
+            (PgBuiltInOids::TEXTOID.oid(), relation.into_datum()),
+            (PgBuiltInOids::TEXTOID.oid(), subject_namespace.into_datum()),
+            (PgBuiltInOids::TEXTOID.oid(), subject_id.into_datum()),
+            (PgBuiltInOids::TEXTOID.oid(), subject_action.into_datum()),
+        ];
+
+        self.client.update(query, Some(1), Some(args))?;
+
+        Ok(())
     }
 }
