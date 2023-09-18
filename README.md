@@ -14,21 +14,21 @@ validations. There are plans to add these things, and a bunch more. See the
 ```bash
 pgfga=# CREATE EXTENSION pgfga;
 
-pgfga=# SELECT * FROM pgfga_create_schema('{"namespaces":{"document":{"relations":{"viewer":[{"namespace":"user"}]},"permissions":{"can_view":{"union":[{"computedUserset":"viewer"},{"tupleToUserset":["parent","can_view"]}]}}},"user":{"relations":{},"permissions":{}}}}');
-         pgfga_create_schema          
+pgfga=# SELECT * FROM pgfga.create_schema('{"namespaces":{"document":{"relations":{"viewer":[{"namespace":"user"}]},"permissions":{"can_view":{"union":[{"computedUserset":"viewer"},{"tupleToUserset":["parent","can_view"]}]}}},"user":{"relations":{},"permissions":{}}}}');
+         create_schema          
 --------------------------------------
  31c1cf4f-f1de-42fb-8e24-9f407805dadf
 
 
-pgfga=# SELECT pgfga_create_tuple('31c1cf4f-f1de-42fb-8e24-9f407805dadf', 'document', '1', 'viewer', 'user', 'anya', '');
- pgfga_create_tuple 
---------------------
-
+pgfga=# SELECT pgfga.create_tuple('31c1cf4f-f1de-42fb-8e24-9f407805dadf', 'document', '1', 'viewer', 'user', 'anya', '');
+ create_tuple 
+--------------
+ 
 (1 row)
 
-pgfga=# SELECT * FROM pgfga_check('31c1cf4f-f1de-42fb-8e24-9f407805dadf', 'document', '1', 'viewer', 'user', 'anya', '');
- pgfga_check 
--------------
+pgfga=# SELECT * FROM pgfga.check('31c1cf4f-f1de-42fb-8e24-9f407805dadf', 'document', '1', 'viewer', 'user', 'anya', '');
+ check 
+-------
  t
 (1 row)
 ```
@@ -62,18 +62,18 @@ CREATE EXTENSION
 
 See [./src/lib.rs](./src/lib.rs) for type signatures.
 
-- `pgfga_create_schema`
-- `pgfga_read_schema`
-- `pgfga_read_schemas`
-- `pgfga_create_tuple`
-- `pgfga_read_tuples`
-- `pgfga_delete_tuple`
-- `pgfga_check`
+- `pgfga.create_schema`
+- `pgfga.read_schema`
+- `pgfga.read_schemas`
+- `pgfga.create_tuple`
+- `pgfga.read_tuples`
+- `pgfga.delete_tuple`
+- `pgfga.check`
 
-### pgfga_read_tuples
+### pgfga.read_tuples
 
 ```sql
-pgfga_read_tuples(
+pgfga.read_tuples(
     schema_id::UUID,
     resource_namespace::VARCHAR(128),
     resource_id::VARCHAR(128),
@@ -84,14 +84,14 @@ pgfga_read_tuples(
 )
 ```
 
-`pgfga_read_tuples` acts a filter. Empty strings will match everything.
+`pgfga.read_tuples` acts a filter. Empty strings will match everything.
 
 #### Examples
 
 1. Read all tuples within a given `schema_id`:
 
    ```sql
-   SELECT * FROM pgfga_read_tuples(schema_id, '', '', '', '', '');
+   SELECT * FROM pgfga.read_tuples(schema_id, '', '', '', '', '');
    ```
 
 ## Roadmap
@@ -107,5 +107,6 @@ pgfga_read_tuples(
   - Validate those tuples against the schema before persisting
 - Create many tuples function
 - Delete many tuples function
-- Function signatures are out of control. Do I need more structs?
+- Function signatures are out of control. Do I need more structs or type
+  aliases?
 - ?
