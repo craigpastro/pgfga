@@ -6,8 +6,8 @@ This is an experimental Postgres extension for doing fine-grained authorization
 (fga), written with [pgrx](https://github.com/pgcentralfoundation/pgrx).
 
 This is a WIP. There is no documentation. There are no tests. There are no
-validations. (I plan on adding some.) I don't know if it works. I am not very
-good with Rust, nor Postgres.
+validations. There are plans to add them, and a bunch more. See the "roadmap"
+below. Please help out if you are interested! :heart:
 
 ## Usage
 
@@ -64,12 +64,37 @@ See [./src/lib.rs](./src/lib.rs) for type signatures.
 
 - `pgfga_create_schema`
 - `pgfga_read_schema`
+- `pgfga_read_schemas`
 - `pgfga_create_tuple`
 - `pgfga_read_tuples`
 - `pgfga_delete_tuple`
 - `pgfga_check`
 
-## TODOs
+### pgfga_read_tuples
+
+```sql
+pgfga_read_tuples(
+    schema_id::UUID,
+    resource_namespace::VARCHAR(128),
+    resource_id::VARCHAR(128),
+    relation::VARCHAR(128),
+    subject_namespace::VARCHAR(128),
+    subject_id::VARCHAR(128),
+    subject_action::VARCHAR(128) DEFAULT '',
+)
+```
+
+`pgfga_read_tuples` acts a filter. Empty strings will match everything.
+
+#### Examples
+
+1. Read all tuples within a given `schema_id`:
+
+   ```sql
+   SELECT * FROM pgfga_read_tuples(schema_id, '', '', '', '', '');
+   ```
+
+## Roadmap
 
 - Tests
 - Documentation
