@@ -4,11 +4,14 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum PgFgaError {
     #[error("unexpected error: {0}")]
-    SqlError(#[from] pgrx::spi::Error),
+    SpiError(#[from] pgrx::spi::Error),
 
-    #[error("error serializing/deserializing schema: {0}")]
-    DeserError(#[from] serde_json::Error),
+    #[error("error (de)serializing schema: {0}")]
+    SerdeError(#[from] serde_json::Error),
 
     #[error("check max depth of {MAX_DEPTH} exceeded")]
     MaxDepth,
+
+    #[error("{0}")]
+    Public(String),
 }

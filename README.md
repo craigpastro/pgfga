@@ -218,9 +218,7 @@ Check if the `subject` has the `relation` with the `resource`.
 - Add the proper indices
 - Client library to make this easier to use
 - Add intersection and exclusion to the schema
-- Writing tuples:
-  - Only allow tuples to be written to particular schemas
-  - Validate those tuples against the schema before persisting
+- Validate those tuples against the schema before persisting
 - Create many tuples function
 - Delete many tuples function
 - Function signatures are out of control. Do I need more structs or type
