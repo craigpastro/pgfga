@@ -6,10 +6,10 @@ This is an experimental Postgres extension for doing fine-grained authorization
 (fga), written with [pgrx](https://github.com/pgcentralfoundation/pgrx).
 
 FGA here means Relationship Based Access Control (ReBAC) based off the
-[Zanzibar paper](https://zanzibar.tech/), and is similar to what
+[Zanzibar paper](https://research.google/pubs/pub48190/), and is similar to what
 [Nungwi](https://github.com/craigpastro/nungwi),
 [OpenFGA](https://github.com/openfga/openfga),
-[Permify](https://github.com/Permify/permify).
+[Permify](https://github.com/Permify/permify),
 [SpiceDB](https://github.com/authzed/spicedb),
 [Warrent](https://github.com/warrant-dev/warrant), and others have done.
 
@@ -28,10 +28,10 @@ pgfga=# SELECT * FROM pgfga.create_schema('{"namespaces":{"document":{"relations
  31c1cf4f-f1de-42fb-8e24-9f407805dadf
 
 
-pgfga=# SELECT pgfga.create_tuple('31c1cf4f-f1de-42fb-8e24-9f407805dadf', 'document', '1', 'viewer', 'user', 'anya', '');
+pgfga=# SELECT * FROM pgfga.create_tuple('31c1cf4f-f1de-42fb-8e24-9f407805dadf', 'document', '1', 'viewer', 'user', 'anya', '');
  create_tuple 
 --------------
- 
+            1
 (1 row)
 
 pgfga=# SELECT * FROM pgfga.check('31c1cf4f-f1de-42fb-8e24-9f407805dadf', 'document', '1', 'viewer', 'user', 'anya', '');
@@ -125,7 +125,7 @@ Read all the schemas.
 ### `pgfga.create_tuple`
 
 ```sql
-SELECT pgfga.create_tuple(
+SELECT * FROM pgfga.create_tuple(
     schema_id::uuid,
     resource_namespace::varchar(128),
     resource_id::varchar(128),
@@ -174,7 +174,7 @@ function will return all tuples that match the filter.
 ### `pgfga.delete_tuple`
 
 ```sql
-SELECT pgfga.delete_tuple(
+SELECT * FROM pgfga.delete_tuple(
     schema_id::uuid,
     resource_namespace::varchar(128),
     resource_id::varchar(128),
@@ -194,7 +194,7 @@ Delete the given tuple. It returns the number of tuples deleted.
 ### `pgfga.check`
 
 ```sql
-SELECT pgfga.check(
+SELECT * FROM pgfga.check(
     schema_id::uuid,
     resource_namespace::varchar(128),
     resource_id::varchar(128),
