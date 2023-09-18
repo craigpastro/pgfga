@@ -98,6 +98,10 @@ impl<'a> Storage<'a> {
     }
 
     pub fn create_schema(&mut self, schema: pgrx::Json) -> Result<Option<pgrx::Uuid>, PgFgaError> {
+        // Check that the given JSON schema can actually be deserialized to a
+        // Schema and return an error if not.
+        serde_json::from_value::<Schema>(schema.0.clone())?;
+
         let result = self
             .client
             .update(
@@ -146,6 +150,13 @@ impl<'a> Storage<'a> {
         subject_id: &str,
         subject_action: &str,
     ) -> Result<i64, PgFgaError> {
+        // Ensure that the schema_id corresponds to a known schema.
+        if self.read_schemas(Some(schema_id))?.is_empty() {
+            return Err(PgFgaError::Public(format!(
+                "'{schema_id}' does not correspond to any known schema"
+            )));
+        }
+
         let query = "
         INSERT INTO pgfga.tuple (
             schema_id,
