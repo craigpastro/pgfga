@@ -77,7 +77,9 @@ See [./src/lib.rs](./src/lib.rs) for type signatures.
 - Add the proper indices
 - Client library to make this easier to use
 - Add intersection and exclusion to the schema
-- Read all schemas function
+- Writing tuples:
+  - Only allow tuples to be written to particular schemas
+  - Validate those tuples against the schema before persisting
 - Create many tuples function
 - Delete many tuples function
 - Function signatures are out of control. Do I need more structs?
