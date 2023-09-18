@@ -97,7 +97,7 @@ fn create_tuple(
     subject_namespace: &str,
     subject_id: &str,
     subject_action: default!(&str, "''"),
-) -> Result<(), PgFgaError> {
+) -> Result<i64, PgFgaError> {
     Spi::connect(|client| {
         Storage::new(client).create_tuple(
             schema_id,
@@ -172,7 +172,7 @@ fn delete_tuple(
     subject_namespace: &str,
     subject_id: &str,
     subject_action: default!(&str, "''"),
-) -> Result<(), PgFgaError> {
+) -> Result<i64, PgFgaError> {
     Spi::connect(|client| {
         Storage::new(client).delete_tuple(
             schema_id,

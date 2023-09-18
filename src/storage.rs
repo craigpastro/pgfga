@@ -145,7 +145,7 @@ impl<'a> Storage<'a> {
         subject_namespace: &str,
         subject_id: &str,
         subject_action: &str,
-    ) -> Result<(), PgFgaError> {
+    ) -> Result<i64, PgFgaError> {
         let query = "
         INSERT INTO pgfga.tuple (
             schema_id,
@@ -176,9 +176,9 @@ impl<'a> Storage<'a> {
             (PgBuiltInOids::VARCHAROID.oid(), subject_action.into_datum()),
         ];
 
-        self.client.update(query, Some(1), Some(args))?;
+        let num_created = self.client.update(query, Some(1), Some(args))?.len();
 
-        Ok(())
+        Ok(num_created as i64)
     }
 
     pub fn read_tuple(
@@ -330,7 +330,7 @@ impl<'a> Storage<'a> {
         subject_namespace: &str,
         subject_id: &str,
         subject_action: &str,
-    ) -> Result<(), PgFgaError> {
+    ) -> Result<i64, PgFgaError> {
         let query = "
         DELETE FROM pgfga.tuple
         WHERE schema_id = $1
@@ -355,8 +355,8 @@ impl<'a> Storage<'a> {
             (PgBuiltInOids::TEXTOID.oid(), subject_action.into_datum()),
         ];
 
-        self.client.update(query, Some(1), Some(args))?;
+        let num_deleted = self.client.update(query, Some(1), Some(args))?.len();
 
-        Ok(())
+        Ok(num_deleted as i64)
     }
 }
