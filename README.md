@@ -107,5 +107,6 @@ pgfga.read_tuples(
   - Validate those tuples against the schema before persisting
 - Create many tuples function
 - Delete many tuples function
-- Function signatures are out of control. Do I need more structs?
+- Function signatures are out of control. Do I need more structs or type
+  aliases?
 - ?
