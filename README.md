@@ -6,8 +6,8 @@ This is an experimental Postgres extension for doing fine-grained authorization
 (fga), written with [pgrx](https://github.com/pgcentralfoundation/pgrx).
 
 This is a WIP. There is no documentation. There are no tests. There are no
-validations. There are plans to add them, and a bunch more. See the "roadmap"
-below. Please help out if you are interested! :heart:
+validations. There are plans to add these things, and a bunch more. See the
+"roadmap" below. Please help out if you are interested :the_horns:
 
 ## Usage
 
