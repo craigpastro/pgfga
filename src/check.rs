@@ -13,9 +13,10 @@ pub struct Checker<'a> {
 impl<'a> Checker<'a> {
     pub fn new(storage: Storage<'a>, schema_id: pgrx::Uuid) -> Result<Self, PgFgaError> {
         let schema = storage
-            .read_schema(schema_id)?
+            .read_schemas(Some(schema_id))?
+            .pop()
             .expect("schema corresponding to the schema_id does not exist")
-            .get_schema()?;
+            .try_into()?;
 
         Ok(Checker {
             storage,

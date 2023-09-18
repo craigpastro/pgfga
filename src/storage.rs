@@ -18,10 +18,8 @@ pub struct TupleRow {
     pub subject_action: String,
 }
 
-impl TupleRow {
-    pub fn into_tuple(
-        self,
-    ) -> (
+impl From<TupleRow>
+    for (
         i64,
         pgrx::Uuid,
         String,
@@ -30,16 +28,18 @@ impl TupleRow {
         String,
         String,
         String,
-    ) {
+    )
+{
+    fn from(row: TupleRow) -> Self {
         (
-            self.rowid,
-            self.schema_id,
-            self.resource_namespace,
-            self.resource_id,
-            self.relation,
-            self.subject_namespace,
-            self.subject_id,
-            self.subject_action,
+            row.rowid,
+            row.schema_id,
+            row.resource_namespace,
+            row.resource_id,
+            row.relation,
+            row.subject_namespace,
+            row.subject_id,
+            row.subject_action,
         )
     }
 }
@@ -78,13 +78,17 @@ pub struct SchemaRow {
     pub created_at: pgrx::TimestampWithTimeZone,
 }
 
-impl SchemaRow {
-    pub fn into_tuple(self) -> (i64, pgrx::Uuid, pgrx::Json, pgrx::TimestampWithTimeZone) {
-        (self.rowid, self.id, self.schema, self.created_at)
+impl From<SchemaRow> for (i64, pgrx::Uuid, pgrx::Json, pgrx::TimestampWithTimeZone) {
+    fn from(row: SchemaRow) -> Self {
+        (row.rowid, row.id, row.schema, row.created_at)
     }
+}
 
-    pub fn get_schema(self) -> Result<Schema, PgFgaError> {
-        Ok(serde_json::from_value(self.schema.0)?)
+impl TryFrom<SchemaRow> for Schema {
+    type Error = PgFgaError;
+
+    fn try_from(row: SchemaRow) -> Result<Self, Self::Error> {
+        Ok(serde_json::from_value(row.schema.0)?)
     }
 }
 
@@ -107,30 +111,29 @@ impl<'a> Storage<'a> {
         Ok(result)
     }
 
-    pub fn read_schema(&self, id: pgrx::Uuid) -> Result<Option<SchemaRow>, PgFgaError> {
-        let tup_table = self.client.select(
-            "SELECT * FROM pgfga.schema WHERE id = $1",
-            Some(1),
-            Some(vec![(PgBuiltInOids::UUIDOID.oid(), id.into_datum())]),
-        )?;
+    pub fn read_schemas(&self, id: Option<pgrx::Uuid>) -> Result<Vec<SchemaRow>, PgFgaError> {
+        let mut query = "SELECT * FROM pgfga.schema".to_string();
+        let mut args = vec![];
 
-        let mut results = Vec::new();
-        for row in tup_table {
-            let schema_row = SchemaRow {
-                rowid: row["rowid"].value()?.expect("no rowid"),
-                id: row["id"].value::<pgrx::Uuid>()?.expect("no id"),
-                schema: row["schema"].value()?.expect("no schema"),
-                created_at: row["created_at"].value()?.expect("no created_at"),
-            };
-
-            results.push(schema_row)
+        if let Some(schema_id) = id {
+            query.push_str(" WHERE id = $1");
+            args.push((PgBuiltInOids::UUIDOID.oid(), schema_id.into_datum()));
         }
 
-        Ok(if !results.is_empty() {
-            results.pop()
-        } else {
-            None
-        })
+        let results = self
+            .client
+            .select(&query, None, Some(args))?
+            .map(|row| {
+                Ok(SchemaRow {
+                    rowid: row["rowid"].value()?.expect("no rowid"),
+                    id: row["id"].value::<pgrx::Uuid>()?.expect("no id"),
+                    schema: row["schema"].value()?.expect("no schema"),
+                    created_at: row["created_at"].value()?.expect("no created_at"),
+                })
+            })
+            .collect::<Result<Vec<_>, spi::Error>>()?;
+
+        Ok(results)
     }
 
     pub fn create_tuple(
