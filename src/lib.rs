@@ -60,9 +60,31 @@ fn pgfga_read_schema(
     PgFgaError,
 > {
     let results: Vec<(i64, pgrx::Uuid, pgrx::Json, pgrx::TimestampWithTimeZone)> =
-        Spi::connect(|client| Storage::new(client).read_schema(id))?
+        Spi::connect(|client| Storage::new(client).read_schemas(Some(id)))?
             .into_iter()
-            .map(|row| row.into_tuple())
+            .map(|row| row.into())
+            .collect();
+
+    Ok(TableIterator::new(results))
+}
+
+#[pg_extern]
+fn pgfga_read_schemas() -> Result<
+    TableIterator<
+        'static,
+        (
+            name!(rowid, i64),
+            name!(id, pgrx::Uuid),
+            name!(schema, pgrx::Json),
+            name!(created_at, pgrx::TimestampWithTimeZone),
+        ),
+    >,
+    PgFgaError,
+> {
+    let results: Vec<(i64, pgrx::Uuid, pgrx::Json, pgrx::TimestampWithTimeZone)> =
+        Spi::connect(|client| Storage::new(client).read_schemas(None))?
+            .into_iter()
+            .map(|row| row.into())
             .collect();
 
     Ok(TableIterator::new(results))
@@ -137,7 +159,7 @@ fn pgfga_read_tuples(
         )
     })?
     .into_iter()
-    .map(|row| row.into_tuple())
+    .map(|row| row.into())
     .collect();
 
     Ok(TableIterator::new(result))
