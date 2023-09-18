@@ -208,20 +208,169 @@ fn check(
     })
 }
 
-// TODO: delete when I actually write some tests.
-#[pg_extern]
-fn hello_pgfga() -> &'static str {
-    "Hello, pgfga"
-}
-
 #[cfg(any(test, feature = "pg_test"))]
 #[pg_schema]
 mod tests {
-    use pgrx::prelude::*;
+    use super::*;
+    use serde_json::json;
 
     #[pg_test]
-    fn test_hello_pgfga() {
-        assert_eq!("Hello, pgfga", crate::hello_pgfga());
+    fn test_cannot_create_invalid_schema() {
+        let err = create_schema(pgrx::Json(json!({"namespaces":{"document":{}}}))).unwrap_err();
+        assert!(matches!(err, PgFgaError::SerdeError(_)));
+    }
+
+    #[pg_test]
+    fn test_create_and_read_schema() {
+        let schema = json!({"namespaces":{"user":{"relations": {}, "permissions": {}}}});
+        let id = create_schema(pgrx::Json(schema.clone())).unwrap().unwrap();
+
+        let mut iter = read_schema(id).unwrap();
+        let (_, got_id, got_schema, _) = iter.next().unwrap();
+
+        assert_eq!(got_id, id);
+        assert_eq!(got_schema.0, schema);
+        assert!(iter.next().is_none());
+    }
+
+    #[pg_test]
+    fn test_create_and_read_schemas() {
+        let schema = json!({"namespaces":{"user":{"relations": {}, "permissions": {}}}});
+        let id1 = create_schema(pgrx::Json(schema.clone())).unwrap().unwrap();
+        let id2 = create_schema(pgrx::Json(schema.clone())).unwrap().unwrap();
+
+        let mut iter = read_schemas().unwrap();
+        let (_, got_id1, got_schema1, _) = iter.next().unwrap();
+
+        assert_eq!(got_id1, id1);
+        assert_eq!(got_schema1.0, schema);
+
+        let (_, got_id2, got_schema2, _) = iter.next().unwrap();
+
+        assert_eq!(got_id2, id2);
+        assert_eq!(got_schema2.0, schema);
+
+        assert!(iter.next().is_none());
+    }
+
+    #[pg_test]
+    fn test_create_duplicate_tuple_returns_zero() {
+        let id = create_schema(pgrx::Json(
+            json!({"namespaces":{"document":{"relations": {}, "permissions": {}}}}),
+        ))
+        .unwrap()
+        .unwrap();
+
+        let first = create_tuple(id, "document", "1", "viewer", "user", "anya", "").unwrap();
+        assert_eq!(first, 1);
+
+        let second = create_tuple(id, "document", "1", "viewer", "user", "anya", "").unwrap();
+        assert_eq!(second, 0);
+    }
+
+    #[pg_test]
+    fn test_read_tuples_works() {
+        let id = create_schema(pgrx::Json(
+            json!({"namespaces":{"document":{"relations": {}, "permissions": {}}}}),
+        ))
+        .unwrap()
+        .unwrap();
+
+        let tup1 = ("document", "1", "parent", "folder", "x", "");
+        let tup2 = ("folder", "x", "viewer", "user", "anya", "");
+
+        create_tuple(id, tup1.0, tup1.1, tup1.2, tup1.3, tup1.4, tup1.5).unwrap();
+        create_tuple(id, tup2.0, tup2.1, tup2.2, tup2.3, tup2.4, tup2.5).unwrap();
+
+        // Read all the tuples.
+        let mut iter = read_tuples(id, "", "", "", "", "", "").unwrap();
+        let (_, _, got_rns, got_rid, got_rel, got_sns, got_sid, got_sact) = iter.next().unwrap();
+
+        assert_eq!(
+            (
+                got_rns.as_str(),
+                got_rid.as_str(),
+                got_rel.as_str(),
+                got_sns.as_str(),
+                got_sid.as_str(),
+                got_sact.as_str()
+            ),
+            tup1
+        );
+
+        let (_, _, got_rns, got_rid, got_rel, got_sns, got_sid, got_sact) = iter.next().unwrap();
+
+        assert_eq!(
+            (
+                got_rns.as_str(),
+                got_rid.as_str(),
+                got_rel.as_str(),
+                got_sns.as_str(),
+                got_sid.as_str(),
+                got_sact.as_str()
+            ),
+            tup2
+        );
+
+        assert!(iter.next().is_none());
+
+        // Filter on relation.
+        let mut iter = read_tuples(id, "", "", "parent", "", "", "").unwrap();
+        let (_, _, got_rns, got_rid, got_rel, got_sns, got_sid, got_sact) = iter.next().unwrap();
+
+        assert_eq!(
+            (
+                got_rns.as_str(),
+                got_rid.as_str(),
+                got_rel.as_str(),
+                got_sns.as_str(),
+                got_sid.as_str(),
+                got_sact.as_str()
+            ),
+            tup1
+        );
+
+        assert!(iter.next().is_none());
+
+        // Filter on resource_namespace.
+        let mut iter = read_tuples(id, "folder", "", "", "", "", "").unwrap();
+        let (_, _, rns1, rid1, rel1, sns1, sid1, sact1) = iter.next().unwrap();
+
+        assert_eq!(
+            (
+                rns1.as_str(),
+                rid1.as_str(),
+                rel1.as_str(),
+                sns1.as_str(),
+                sid1.as_str(),
+                sact1.as_str()
+            ),
+            tup2
+        );
+
+        assert!(iter.next().is_none());
+    }
+
+    #[pg_test]
+    fn test_delete_tuple_works() {
+        let id = create_schema(pgrx::Json(
+            json!({"namespaces":{"document":{"relations": {}, "permissions": {}}}}),
+        ))
+        .unwrap()
+        .unwrap();
+
+        create_tuple(id, "document", "1", "viewer", "user", "anya", "").unwrap();
+
+        let first = delete_tuple(id, "document", "1", "viewer", "user", "anya", "").unwrap();
+        assert_eq!(first, 1);
+
+        // Second delete should return 0 if we try to delete the same tuple again.
+        let second = delete_tuple(id, "document", "1", "viewer", "user", "anya", "").unwrap();
+        assert_eq!(second, 0);
+
+        // And let's just verify there are no tuples.
+        let mut iter = read_tuples(id, "", "", "", "", "", "").unwrap();
+        assert!(iter.next().is_none())
     }
 }
 

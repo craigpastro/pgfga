@@ -15,7 +15,7 @@ impl<'a> Checker<'a> {
         let schema = storage
             .read_schemas(Some(schema_id))?
             .pop()
-            .expect("schema corresponding to the schema_id does not exist")
+            .ok_or_else(|| PgFgaError::UnknownSchemaId(schema_id))?
             .try_into()?;
 
         Ok(Checker {

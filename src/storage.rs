@@ -152,9 +152,7 @@ impl<'a> Storage<'a> {
     ) -> Result<i64, PgFgaError> {
         // Ensure that the schema_id corresponds to a known schema.
         if self.read_schemas(Some(schema_id))?.is_empty() {
-            return Err(PgFgaError::Public(format!(
-                "'{schema_id}' does not correspond to any known schema"
-            )));
+            return Err(PgFgaError::UnknownSchemaId(schema_id));
         }
 
         let query = "
