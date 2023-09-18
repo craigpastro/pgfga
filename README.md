@@ -83,7 +83,7 @@ See below for descriptions and examples.
 ### `pgfga.create_schema`
 
 ```sql
-SELECT * FROM pgfga.create_schema(schema::json);
+pgfga=# SELECT * FROM pgfga.create_schema(schema::json);
             create_schema             
 --------------------------------------
  e8f8971e-12d7-40a6-b45c-b39d621fd34f
@@ -91,16 +91,16 @@ SELECT * FROM pgfga.create_schema(schema::json);
 ```
 
 The JSON notation for the schema is based on the `Schema` struct found in
-[./src/schema.rs](./src/schema.rs). It is most closely related to the schemas of
+[./src/schema.rs](./src/schema.rs). It is closely related to the schemas of
 [SpiceDB](https://github.com/authzed/spicedb). In the future it would be nice to
 write a DSL for schemas and a parser so that we don't have to specify the schema
 using JSON. It would also be very nice if all the people who have wrote ReBAC
-implementations could decide on a single DSL.
+implementations decided on a single DSL.
 
 ### `pgfga.read_schema`
 
 ```sql
-SELECT * FROM pgfga.read_schema(id::uuid);
+pgfga=# SELECT * FROM pgfga.read_schema(id::uuid);
  rowid |                  id                  |       schema                       |          created_at           
 -------+--------------------------------------+------------------------------------+-------------------------------
      1 | 35777d4d-3b66-47e5-907b-191b682b92c4 | {"namespaces":{"document":{...}}}" | 2023-09-17 09:40:00.897494-07
@@ -112,7 +112,7 @@ Read the schema corresponding to the given id.
 ### `pgfga.read_schemas`
 
 ```sql
-SELECT * FROM pgfga.read_schemas();
+pgfga=# SELECT * FROM pgfga.read_schemas();
  rowid |                  id                  |       schema                       |          created_at           
 -------+--------------------------------------+------------------------------------+-------------------------------
      1 | 35777d4d-3b66-47e5-907b-191b682b92c4 | {"namespaces":{"document":{...}}}" | 2023-09-17 09:40:00.897494-07
@@ -125,7 +125,7 @@ Read all the schemas.
 ### `pgfga.create_tuple`
 
 ```sql
-SELECT * FROM pgfga.create_tuple(
+pgfga=# SELECT * FROM pgfga.create_tuple(
     schema_id::uuid,
     resource_namespace::varchar(128),
     resource_id::varchar(128),
@@ -145,7 +145,7 @@ Create a tuple. It returns the number of tuples created.
 ### `pgfga.read_tuples`
 
 ```sql
-SELECT * FROM pgfga.read_tuples(
+pgfga=# SELECT * FROM pgfga.read_tuples(
     schema_id::uuid,
     resource_namespace::varchar(128),
     resource_id::varchar(128),
@@ -174,7 +174,7 @@ function will return all tuples that match the filter.
 ### `pgfga.delete_tuple`
 
 ```sql
-SELECT * FROM pgfga.delete_tuple(
+pgfga=# SELECT * FROM pgfga.delete_tuple(
     schema_id::uuid,
     resource_namespace::varchar(128),
     resource_id::varchar(128),
@@ -194,7 +194,7 @@ Delete the given tuple. It returns the number of tuples deleted.
 ### `pgfga.check`
 
 ```sql
-SELECT * FROM pgfga.check(
+pgfga=# SELECT * FROM pgfga.check(
     schema_id::uuid,
     resource_namespace::varchar(128),
     resource_id::varchar(128),
