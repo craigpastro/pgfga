@@ -5,6 +5,13 @@
 This is an experimental Postgres extension for doing fine-grained authorization
 (fga), written with [pgrx](https://github.com/pgcentralfoundation/pgrx).
 
+FGA here means Relationship Based Access Control (ReBAC) based off the
+[Zanzibar paper](https://zanzibar.tech/), and is similar to what
+[OpenFGA](https://github.com/openfga/openfga),
+[Permify](https://github.com/Permify/permify).
+[SpiceDB](https://github.com/authzed/spicedb),
+[Warrent](https://github.com/warrant-dev/warrant), and others have done.
+
 This is a WIP. There is no documentation. There are no tests. There are no
 validations. There are plans to add these things, and a bunch more. See the
 "roadmap" below. Please help out if you are interested!
@@ -70,17 +77,30 @@ See [./src/lib.rs](./src/lib.rs) for type signatures.
 - `pgfga.delete_tuple`
 - `pgfga.check`
 
-### pgfga.read_tuples
+### `pgfga.create_schema`
+
+```sql
+pgfga.create_schema(schema::json)::uuid
+```
+
+The JSON notation for the schema is based on the `Schema` struct found in
+[./src/schema.rs](./src/schema.rs). It is most closely related to the schemas of
+[SpiceDB](https://github.com/authzed/spicedb). In the future it would be nice to
+write a DSL for schemas and a parser so that we don't have to specify the schema
+using JSON. It would also be very nice if all the people who have wrote ReBAC
+implementations could decide on a single DSL.
+
+### `pgfga.read_tuples`
 
 ```sql
 pgfga.read_tuples(
-    schema_id::UUID,
-    resource_namespace::VARCHAR(128),
-    resource_id::VARCHAR(128),
-    relation::VARCHAR(128),
-    subject_namespace::VARCHAR(128),
-    subject_id::VARCHAR(128),
-    subject_action::VARCHAR(128) DEFAULT '',
+    schema_id::uuid,
+    resource_namespace::varchar(128),
+    resource_id::varchar(128),
+    relation::varchar(128),
+    subject_namespace::varchar(128),
+    subject_id::varchar(128),
+    subject_action::varchar(128) default '',
 )
 ```
 
