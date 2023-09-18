@@ -12,8 +12,6 @@ pub mod storage;
 
 extension_sql!(
     r#"
-    CREATE SCHEMA pgfga;
-
     CREATE TABLE pgfga.schema (
         rowid BIGINT GENERATED ALWAYS AS IDENTITY,
         id UUID PRIMARY KEY DEFAULT gen_random_uuid() ,
@@ -40,12 +38,12 @@ extension_sql!(
 );
 
 #[pg_extern]
-fn pgfga_create_schema(schema: pgrx::Json) -> Result<Option<pgrx::Uuid>, PgFgaError> {
+fn create_schema(schema: pgrx::Json) -> Result<Option<pgrx::Uuid>, PgFgaError> {
     Spi::connect(|client| Storage::new(client).create_schema(schema))
 }
 
 #[pg_extern]
-fn pgfga_read_schema(
+fn read_schema(
     id: pgrx::Uuid,
 ) -> Result<
     TableIterator<
@@ -69,7 +67,7 @@ fn pgfga_read_schema(
 }
 
 #[pg_extern]
-fn pgfga_read_schemas() -> Result<
+fn read_schemas() -> Result<
     TableIterator<
         'static,
         (
@@ -91,7 +89,7 @@ fn pgfga_read_schemas() -> Result<
 }
 
 #[pg_extern]
-fn pgfga_create_tuple(
+fn create_tuple(
     schema_id: pgrx::Uuid,
     resource_namespace: &str,
     resource_id: &str,
@@ -114,7 +112,7 @@ fn pgfga_create_tuple(
 }
 
 #[pg_extern]
-fn pgfga_read_tuples(
+fn read_tuples(
     schema_id: pgrx::Uuid,
     resource_namespace: &str,
     resource_id: &str,
@@ -166,7 +164,7 @@ fn pgfga_read_tuples(
 }
 
 #[pg_extern]
-fn pgfga_delete_tuple(
+fn delete_tuple(
     schema_id: pgrx::Uuid,
     resource_namespace: &str,
     resource_id: &str,
@@ -189,7 +187,7 @@ fn pgfga_delete_tuple(
 }
 
 #[pg_extern]
-fn pgfga_check(
+fn check(
     schema_id: pgrx::Uuid,
     resource_namespace: &str,
     resource_id: &str,

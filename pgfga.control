@@ -1,5 +1,6 @@
 comment = 'pgfga:  Created by pgrx'
 default_version = '@CARGO_VERSION@'
 module_pathname = '$libdir/pgfga'
+schema = 'pgfga'
 relocatable = false
 superuser = true
