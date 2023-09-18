@@ -214,8 +214,7 @@ Check if the `subject` has the `relation` with the `resource`.
 ## Roadmap
 
 - Tests
-- Documentation
-- Clean up code
+- Schema documentation
 - Add the proper indices
 - Client library to make this easier to use
 - Add intersection and exclusion to the schema
