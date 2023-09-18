@@ -13,9 +13,9 @@ FGA here means Relationship Based Access Control (ReBAC) based off the
 [SpiceDB](https://github.com/authzed/spicedb),
 [Warrent](https://github.com/warrant-dev/warrant), and others have done.
 
-This is a WIP. There is no documentation. There are no tests. There are no
-validations. There are plans to add these things, and a bunch more. See the
-"roadmap" below. Please help out if you are interested!
+This is a WIP. There is no documentation and there are no validations. There are
+plans to add these things, and a bunch more. See the "roadmap" below. Please
+help out if you are interested!
 
 ## Usage
 
@@ -213,11 +213,12 @@ Check if the `subject` has the `relation` with the `resource`.
 
 ## Roadmap
 
-- Tests
+- Check tests
 - Schema documentation
 - Add the proper indices
 - Client library to make this easier to use
 - Add intersection and exclusion to the schema
+- Return iterators (and not vectors) in the storage module
 - Validate those tuples against the schema before persisting
 - Create many tuples function
 - Delete many tuples function
