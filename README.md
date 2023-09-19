@@ -13,9 +13,9 @@ FGA here means Relationship Based Access Control (ReBAC) based off the
 [SpiceDB](https://github.com/authzed/spicedb),
 [Warrent](https://github.com/warrant-dev/warrant), and others have done.
 
-This is a WIP. There is no documentation. There are no tests. There are no
-validations. There are plans to add these things, and a bunch more. See the
-"roadmap" below. Please help out if you are interested!
+This is a WIP. There is no documentation and there are no validations. There are
+plans to add these things, and a bunch more. See the "roadmap" below. Please
+help out if you are interested!
 
 ## Usage
 
@@ -39,6 +39,17 @@ pgfga=# SELECT * FROM pgfga.check('31c1cf4f-f1de-42fb-8e24-9f407805dadf', 'docum
 -------
  t
 (1 row)
+```
+
+## Docker
+
+You can spin up a Postgres container with the `pgfga` extension installed with
+`docker compose up -d`. (This doesn't seem to work on silicon Macs though. I'm
+investigating and would love any help.) Once Postgres is up, you can connect to
+it using the following connection string:
+
+```
+postgres://postgres:password@localhost:28801/postgres
 ```
 
 ## Installation
@@ -213,11 +224,12 @@ Check if the `subject` has the `relation` with the `resource`.
 
 ## Roadmap
 
-- Tests
+- Check tests
 - Schema documentation
 - Add the proper indices
 - Client library to make this easier to use
 - Add intersection and exclusion to the schema
+- Return iterators (and not vectors) in the storage module
 - Validate those tuples against the schema before persisting
 - Create many tuples function
 - Delete many tuples function

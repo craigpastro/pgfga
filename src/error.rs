@@ -14,4 +14,7 @@ pub enum PgFgaError {
 
     #[error("{0}")]
     Public(String),
+
+    #[error("'{0}' does not correspond to any known schema")]
+    UnknownSchemaId(pgrx::Uuid),
 }
