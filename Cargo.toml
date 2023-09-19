@@ -23,7 +23,7 @@ thiserror = "1.0"
 uuid = "1.4"
 
 [dev-dependencies]
-pgrx-tests = "=0.9.8"
+pgrx-tests = "=0.10.1"
 
 [profile.dev]
 panic = "unwind"
