@@ -213,6 +213,7 @@ fn check(
 mod tests {
     use super::*;
     use serde_json::json;
+    use uuid;
 
     #[pg_test]
     fn test_cannot_create_invalid_schema() {
@@ -251,6 +252,15 @@ mod tests {
         assert_eq!(got_schema2.0, schema);
 
         assert!(iter.next().is_none());
+    }
+
+    #[pg_test]
+    fn test_cannot_create_tuple_on_nonexistant_schema() {
+        let schema_id = pgrx::Uuid::from_bytes(uuid::Uuid::new_v4().into_bytes());
+
+        let err =
+            create_tuple(schema_id, "document", "1", "viewer", "user", "anya", "").unwrap_err();
+        assert!(matches!(err, PgFgaError::UnknownSchemaId(_)));
     }
 
     #[pg_test]
