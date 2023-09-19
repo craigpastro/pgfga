@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - run: cargo test
+      - name: Build docker image
+        run: docker compose -f .ci/compose.yaml build
+      - name: Run tests
+        run: docker compose -f .ci/compose.yaml run test_pgfga

@@ -41,6 +41,16 @@ pgfga=# SELECT * FROM pgfga.check('31c1cf4f-f1de-42fb-8e24-9f407805dadf', 'docum
 (1 row)
 ```
 
+## Docker
+
+You can spin up a Postgres container with the `pgfga` extension installed with
+`docker compose up -d`. Once Postgres is up, you can connect to it using the
+following connection string:
+
+```
+postgres://postgres:password@localhost:28801/postgres
+```
+
 ## Installation
 
 Requires [pgrx](https://github.com/pgcentralfoundation/pgrx). If you have pgrx
