@@ -9,7 +9,10 @@ pub struct Schema {
 
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct Namespace {
+    #[serde(default)]
     pub relations: HashMap<String, Vec<TypeRestriction>>,
+
+    #[serde(default)]
     pub permissions: HashMap<String, Rewrite>,
 }
 
@@ -26,6 +29,8 @@ pub enum Rewrite {
     ComputedUserset(String),
     TupleToUserset(String, String),
     Union(Vec<Rewrite>),
+    Intersection(Vec<Rewrite>),
+    Exclusion(Box<Rewrite>, Box<Rewrite>),
 }
 
 #[cfg(test)]

@@ -217,7 +217,7 @@ mod tests {
 
     #[pg_test]
     fn test_cannot_create_invalid_schema() {
-        let err = create_schema(pgrx::Json(json!({"namespaces":{"document":{}}}))).unwrap_err();
+        let err = create_schema(pgrx::Json(json!({"foo":"bar"}))).unwrap_err();
         assert!(matches!(err, PgFgaError::SerdeError(_)));
     }
 
