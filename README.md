@@ -228,7 +228,6 @@ Check if the `subject` has the `relation` with the `resource`.
 - Schema documentation
 - Add the proper indices
 - Client library to make this easier to use
-- Add intersection and exclusion to the schema
 - Return iterators (and not vectors) in the storage module
 - Validate those tuples against the schema before persisting
 - Create many tuples function
