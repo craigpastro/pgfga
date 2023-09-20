@@ -29,6 +29,8 @@ pub enum Rewrite {
     ComputedUserset(String),
     TupleToUserset(String, String),
     Union(Vec<Rewrite>),
+    Intersection(Vec<Rewrite>),
+    Exclusion(Box<Rewrite>, Box<Rewrite>),
 }
 
 #[cfg(test)]

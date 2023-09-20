@@ -97,10 +97,9 @@ impl<'a> Checker<'a> {
                     depth + 1,
                 );
 
-                if let Ok(val) = result {
-                    if val {
-                        return Ok(true);
-                    }
+                // We want to ignore errors here.
+                if let Ok(true) = result {
+                    return Ok(true);
                 }
             }
         }
@@ -168,6 +167,25 @@ impl<'a> Checker<'a> {
                 subject_id,
                 subject_action,
                 rewrites,
+                depth,
+            ),
+            Rewrite::Intersection(rewrites) => self.check_intersection(
+                resource_namespace,
+                resource_id,
+                subject_namespace,
+                subject_id,
+                subject_action,
+                rewrites,
+                depth,
+            ),
+            Rewrite::Exclusion(minuend, subtrahend) => self.check_exclusion(
+                resource_namespace,
+                resource_id,
+                subject_namespace,
+                subject_id,
+                subject_action,
+                minuend,
+                subtrahend,
                 depth,
             ),
         }
@@ -245,10 +263,8 @@ impl<'a> Checker<'a> {
                 depth + 1,
             );
 
-            if let Ok(val) = result {
-                if val {
-                    return Ok(true);
-                }
+            if let Ok(true) = result {
+                return Ok(true);
             }
         }
 
@@ -276,13 +292,84 @@ impl<'a> Checker<'a> {
                 depth + 1,
             );
 
-            if let Ok(val) = result {
-                if val {
-                    return Ok(true);
-                }
+            if let Ok(true) = result {
+                return Ok(true);
             }
         }
+
         Ok(false)
+    }
+
+    fn check_intersection(
+        &self,
+        resource_namespace: &str,
+        resource_id: &str,
+        subject_namespace: &str,
+        subject_id: &str,
+        subject_action: &str,
+        rewrites: &Vec<Rewrite>,
+        depth: i64,
+    ) -> Result<bool, PgFgaError> {
+        for rewrite in rewrites {
+            let result = self.check_rewrite(
+                resource_namespace,
+                resource_id,
+                subject_namespace,
+                subject_id,
+                subject_action,
+                rewrite,
+                depth + 1,
+            );
+
+            if let Ok(false) = result {
+                return Ok(false);
+            }
+        }
+
+        Ok(true)
+    }
+
+    fn check_exclusion(
+        &self,
+        resource_namespace: &str,
+        resource_id: &str,
+        subject_namespace: &str,
+        subject_id: &str,
+        subject_action: &str,
+        minuend: &Rewrite,
+        subtrahend: &Rewrite,
+        depth: i64,
+    ) -> Result<bool, PgFgaError> {
+        let minuend_result = self.check_rewrite(
+            resource_namespace,
+            resource_id,
+            subject_namespace,
+            subject_id,
+            subject_action,
+            minuend,
+            depth + 1,
+        );
+
+        if let Ok(false) = minuend_result {
+            return Ok(false);
+        }
+
+        let subtrahend_result = self.check_rewrite(
+            resource_namespace,
+            resource_id,
+            subject_namespace,
+            subject_id,
+            subject_action,
+            subtrahend,
+            depth + 1,
+        );
+
+        if let Ok(true) = subtrahend_result {
+            return Ok(false);
+        }
+
+        // minuend_result = true && subtrahend_result = false
+        Ok(true)
     }
 
     fn is_relation(&self, namespace: &str, action: &str) -> bool {
