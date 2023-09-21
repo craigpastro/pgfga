@@ -382,6 +382,195 @@ mod tests {
         let mut iter = read_tuples(id, "", "", "", "", "", "").unwrap();
         assert!(iter.next().is_none())
     }
+
+    //
+    // Check tests
+    //
+
+    #[pg_test]
+    fn test_direct_check() {
+        let schema = pgrx::Json(json!(
+            {
+                "namespaces": {
+                    "user": {},
+                    "document": {
+                        "relations": {
+                            "viewer": [
+                                {
+                                    "namespace": "user",
+                                }
+                            ]
+                        },
+                    },
+                },
+            }
+        ));
+
+        let id = create_schema(schema).unwrap().unwrap();
+
+        create_tuple(id, "document", "1", "viewer", "user", "anya", "").unwrap();
+
+        let should_be_true = check(id, "document", "1", "viewer", "user", "anya", "").unwrap();
+        assert!(should_be_true);
+
+        let should_be_false1 = check(id, "document", "2", "viewer", "user", "anya", "").unwrap();
+        assert!(!should_be_false1);
+
+        let should_be_false2 = check(id, "document", "2", "viewer", "user", "beatrix", "").unwrap();
+        assert!(!should_be_false2);
+    }
+
+    #[pg_test]
+    fn test_computed_userset() {
+        let schema = pgrx::Json(json!(
+            {
+                "namespaces": {
+                    "user": {},
+                    "document": {
+                        "relations": {
+                            "viewer": [
+                                {
+                                    "namespace": "user",
+                                }
+                            ]
+                        },
+                        "permissions": {
+                            "can_view": {
+                                "computedUserset": "viewer"
+                            }
+                        }
+                    },
+                },
+            }
+        ));
+
+        let id = create_schema(schema).unwrap().unwrap();
+
+        create_tuple(id, "document", "1", "viewer", "user", "anya", "").unwrap();
+
+        let should_be_true = check(id, "document", "1", "can_view", "user", "anya", "").unwrap();
+        assert!(should_be_true);
+
+        let should_be_false1 = check(id, "document", "2", "can_view", "user", "anya", "").unwrap();
+        assert!(!should_be_false1);
+
+        let should_be_false2 =
+            check(id, "document", "2", "can_view", "user", "beatrix", "").unwrap();
+        assert!(!should_be_false2);
+    }
+
+    #[pg_test]
+    fn test_tuple_to_userset() {
+        let schema = pgrx::Json(json!(
+            {
+                "namespaces": {
+                    "user": {},
+                    "folder": {
+                        "relations": {
+                            "viewer": [
+                                {
+                                    "namespace": "user",
+                                }
+                            ]
+                        },
+                        "permissions": {
+                            "can_view": {
+                                "computedUserset": "viewer"
+                            }
+                        }
+                    },
+                    "document": {
+                        "relations": {
+                            "parent": [
+                                {
+                                    "namespace": "folder",
+                                }
+                            ]
+                        },
+                        "permissions": {
+                            "can_view": {
+                                "tupleToUserset": ["parent", "can_view"]
+                            }
+                        }
+                    },
+                },
+            }
+        ));
+
+        let id = create_schema(schema).unwrap().unwrap();
+
+        create_tuple(id, "folder", "x", "viewer", "user", "anya", "").unwrap();
+        create_tuple(id, "document", "1", "parent", "folder", "x", "").unwrap();
+
+        let should_be_true1 = check(id, "folder", "x", "can_view", "user", "anya", "").unwrap();
+        assert!(should_be_true1);
+
+        let should_be_true2 = check(id, "document", "1", "can_view", "user", "anya", "").unwrap();
+        assert!(should_be_true2);
+
+        let should_be_false1 = check(id, "document", "2", "can_view", "user", "anya", "").unwrap();
+        assert!(!should_be_false1);
+
+        let should_be_false2 =
+            check(id, "document", "2", "can_view", "user", "beatrix", "").unwrap();
+        assert!(!should_be_false2);
+    }
+
+    #[pg_test]
+    fn test_union() {
+        let schema = pgrx::Json(json!(
+            {
+                "namespaces": {
+                    "user": {},
+                    "document": {
+                        "relations": {
+                            "viewer": [
+                                {
+                                    "namespace": "user",
+                                }
+                            ],
+                            "editor": [
+                                {
+                                    "namespace": "user",
+                                }
+                            ]
+                        },
+                        "permissions": {
+                            "can_view": {
+                                "union": [
+                                    {
+                                        "computedUserset": "viewer",
+                                    },
+                                    {
+                                        "computedUserset": "editor",
+                                    },
+                                ]
+                            }
+                        }
+                    },
+                },
+            }
+        ));
+
+        let id = create_schema(schema).unwrap().unwrap();
+
+        create_tuple(id, "document", "1", "viewer", "user", "anya", "").unwrap();
+        create_tuple(id, "document", "2", "editor", "user", "beatrix", "").unwrap();
+
+        let should_be_true1 = check(id, "document", "1", "can_view", "user", "anya", "").unwrap();
+        assert!(should_be_true1);
+
+        let should_be_false1 =
+            check(id, "document", "1", "can_view", "user", "beatrix", "").unwrap();
+        assert!(!should_be_false1);
+
+        let should_be_true2 =
+            check(id, "document", "2", "can_view", "user", "beatrix", "").unwrap();
+        assert!(should_be_true2);
+
+        let should_be_false2 = check(id, "document", "2", "can_view", "user", "anya", "").unwrap();
+        assert!(!should_be_false2);
+    }
 }
 
 /// This module is required by `cargo pgrx test` invocations.

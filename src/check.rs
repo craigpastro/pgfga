@@ -242,7 +242,7 @@ impl<'a> Checker<'a> {
             // in new_resource_namespace then there is nothing to do so
             // skip it.
             if !self.is_relation(new_resource_namespace, computed_userset)
-                && !self.is_permission(new_resource_namespace, tupleset)
+                && !self.is_permission(new_resource_namespace, computed_userset)
             {
                 continue;
             }
