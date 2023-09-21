@@ -7,6 +7,7 @@ pub struct Storage<'a> {
     client: SpiClient<'a>,
 }
 
+#[derive(Debug)]
 pub struct TupleRow {
     pub rowid: i64,
     pub schema_id: pgrx::Uuid,
@@ -71,6 +72,7 @@ impl<'a> TryFrom<SpiHeapTupleData<'a>> for TupleRow {
     }
 }
 
+#[derive(Debug)]
 pub struct SchemaRow {
     pub rowid: i64,
     pub id: pgrx::Uuid,
