@@ -571,6 +571,115 @@ mod tests {
         let should_be_false2 = check(id, "document", "2", "can_view", "user", "anya", "").unwrap();
         assert!(!should_be_false2);
     }
+
+    #[pg_test]
+    fn test_intersection() {
+        let schema = pgrx::Json(json!(
+            {
+                "namespaces": {
+                    "user": {},
+                    "document": {
+                        "relations": {
+                            "viewer": [
+                                {
+                                    "namespace": "user",
+                                }
+                            ],
+                            "editor": [
+                                {
+                                    "namespace": "user",
+                                }
+                            ]
+                        },
+                        "permissions": {
+                            "can_view": {
+                                "intersection": [
+                                    {
+                                        "computedUserset": "viewer",
+                                    },
+                                    {
+                                        "computedUserset": "editor",
+                                    },
+                                ]
+                            }
+                        }
+                    },
+                },
+            }
+        ));
+
+        let id = create_schema(schema).unwrap().unwrap();
+
+        create_tuple(id, "document", "1", "viewer", "user", "anya", "").unwrap();
+        create_tuple(id, "document", "1", "editor", "user", "anya", "").unwrap();
+        create_tuple(id, "document", "1", "viewer", "user", "beatrix", "").unwrap();
+        create_tuple(id, "document", "1", "editor", "user", "charlie", "").unwrap();
+
+        let should_be_true = check(id, "document", "1", "can_view", "user", "anya", "").unwrap();
+        assert!(should_be_true);
+
+        let should_be_false1 =
+            check(id, "document", "1", "can_view", "user", "beatrix", "").unwrap();
+        assert!(!should_be_false1);
+
+        let should_be_false2 =
+            check(id, "document", "1", "can_view", "user", "charlie", "").unwrap();
+        assert!(!should_be_false2);
+    }
+
+    #[pg_test]
+    fn test_exclusion() {
+        let schema = pgrx::Json(json!(
+            {
+                "namespaces": {
+                    "user": {},
+                    "document": {
+                        "relations": {
+                            "viewer": [
+                                {
+                                    "namespace": "user",
+                                }
+                            ],
+                            "editor": [
+                                {
+                                    "namespace": "user",
+                                }
+                            ]
+                        },
+                        "permissions": {
+                            "can_view": {
+                                "exclusion": [
+                                    {
+                                        "computedUserset": "viewer",
+                                    },
+                                    {
+                                        "computedUserset": "editor",
+                                    },
+                                ]
+                            }
+                        }
+                    },
+                },
+            }
+        ));
+
+        let id = create_schema(schema).unwrap().unwrap();
+
+        create_tuple(id, "document", "1", "viewer", "user", "anya", "").unwrap();
+        create_tuple(id, "document", "1", "editor", "user", "anya", "").unwrap();
+        create_tuple(id, "document", "1", "viewer", "user", "beatrix", "").unwrap();
+        create_tuple(id, "document", "1", "editor", "user", "charlie", "").unwrap();
+
+        let should_be_false1 = check(id, "document", "1", "can_view", "user", "anya", "").unwrap();
+        assert!(!should_be_false1);
+
+        let should_be_true = check(id, "document", "1", "can_view", "user", "beatrix", "").unwrap();
+        assert!(should_be_true);
+
+        let should_be_false2 =
+            check(id, "document", "1", "can_view", "user", "charlie", "").unwrap();
+        assert!(!should_be_false2);
+    }
 }
 
 /// This module is required by `cargo pgrx test` invocations.
