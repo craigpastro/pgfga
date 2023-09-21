@@ -101,10 +101,12 @@ pgfga=# SELECT * FROM pgfga.create_schema(schema::json);
 (1 row)
 ```
 
-The JSON notation for the schema is based on the `Schema` struct found in
-[./src/schema.rs](./src/schema.rs). It is closely related to the schemas of
-[SpiceDB](https://github.com/authzed/spicedb). You can see some examples in
-the check tests found near the bottom of [./src/lib.rc](./src/lib.rs).
+Schemas in `pgfga` are closely related to the schemas of
+[SpiceDB](https://github.com/authzed/spicedb), except for the fact that they
+need to be written in JSON (sorry!). The JSON notation for schemas is based
+on the `Schema` struct found in [./src/schema.rs](./src/schema.rs). You can
+see some examples in the check tests found near the bottom of
+[./src/lib.rc](./src/lib.rs).
 
 In the future it would be nice to write a DSL for schemas and a parser so
 that we don't have to specify the schema using JSON. It would also be very
