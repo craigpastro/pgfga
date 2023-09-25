@@ -13,10 +13,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-WORKDIR /foo
-ENV HOME=/foo
-ENV PATH=/foo/.cargo/bin:$PATH
-RUN chown postgres:postgres -R /foo
+WORKDIR /app
+ENV HOME=/app
+ENV PATH=/app/.cargo/bin:$PATH
+RUN chown postgres:postgres -R /app
 
 USER postgres
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal
@@ -27,7 +27,7 @@ USER root
 COPY . .
 RUN cargo pgrx install
 
-RUN chown -R postgres:postgres /foo
+RUN chown -R postgres:postgres /app
 RUN chown -R postgres:postgres /usr/share/postgresql/15/extension
 RUN chown -R postgres:postgres /usr/lib/postgresql/15/lib
 
