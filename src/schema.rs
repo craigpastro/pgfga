@@ -33,6 +33,22 @@ pub enum Rewrite {
     Exclusion(Box<Rewrite>, Box<Rewrite>),
 }
 
+impl Schema {
+    pub fn is_relation(&self, namespace: &str, action: &str) -> bool {
+        self.namespaces
+            .get(namespace)
+            .and_then(|ns| ns.relations.get(action))
+            .is_some()
+    }
+
+    pub fn is_permission(&self, namespace: &str, action: &str) -> bool {
+        self.namespaces
+            .get(namespace)
+            .and_then(|ns| ns.permissions.get(action))
+            .is_some()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
