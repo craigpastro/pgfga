@@ -7,23 +7,24 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [features]
-default = ["pg15"]
+default = ["pg16"]
 pg11 = ["pgrx/pg11", "pgrx-tests/pg11"]
 pg12 = ["pgrx/pg12", "pgrx-tests/pg12"]
 pg13 = ["pgrx/pg13", "pgrx-tests/pg13"]
 pg14 = ["pgrx/pg14", "pgrx-tests/pg14"]
 pg15 = ["pgrx/pg15", "pgrx-tests/pg15"]
+pg16 = ["pgrx/pg16", "pgrx-tests/pg16"]
 pg_test = []
 
 [dependencies]
-pgrx = "=0.9.8"
+pgrx = "=0.10.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "1.0"
 uuid = "1.4"
 
 [dev-dependencies]
-pgrx-tests = "=0.9.8"
+pgrx-tests = "=0.10.2"
 
 [profile.dev]
 panic = "unwind"
