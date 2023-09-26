@@ -104,7 +104,7 @@ see some examples in the check tests found near the bottom of
 
 In the future it would be nice to write a DSL for schemas and a parser so
 that we don't have to specify the schema using JSON. It would also be very
-nice if all the people who have wrote ReBAC implementations decided on a
+nice if all the people who have written ReBAC implementations decided on a
 single DSL.
 
 ### `pgfga.read_schema`
