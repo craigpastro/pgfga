@@ -59,7 +59,7 @@ impl<'a> Checker<'a> {
             return Err(PgFgaError::MaxDepth);
         }
 
-        if self.is_relation(resource_namespace, action) {
+        if self.schema.is_relation(resource_namespace, action) {
             // If the action is a relation we can attempt a direct check.
             if self
                 .storage
@@ -241,8 +241,12 @@ impl<'a> Checker<'a> {
             // If computed_userset is not actually a relation or permission
             // in new_resource_namespace then there is nothing to do so
             // skip it.
-            if !self.is_relation(new_resource_namespace, computed_userset)
-                && !self.is_permission(new_resource_namespace, computed_userset)
+            if !self
+                .schema
+                .is_relation(new_resource_namespace, computed_userset)
+                && !self
+                    .schema
+                    .is_permission(new_resource_namespace, computed_userset)
             {
                 continue;
             }
@@ -370,21 +374,5 @@ impl<'a> Checker<'a> {
 
         // minuend_result = true && subtrahend_result = false
         Ok(true)
-    }
-
-    fn is_relation(&self, namespace: &str, action: &str) -> bool {
-        self.schema
-            .namespaces
-            .get(namespace)
-            .and_then(|ns| ns.relations.get(action))
-            .is_some()
-    }
-
-    fn is_permission(&self, namespace: &str, action: &str) -> bool {
-        self.schema
-            .namespaces
-            .get(namespace)
-            .and_then(|ns| ns.permissions.get(action))
-            .is_some()
     }
 }
