@@ -1,6 +1,13 @@
-name: Pull Request
+name: pgfga pull request
 
-on: [pull_request]
+on:
+  pull_request:
+    paths:
+      - pgfga/**
+
+defaults:
+  run:
+    working-directory: pgfga
 
 jobs:
   test:
