@@ -21,7 +21,7 @@ pgrx = "=0.11.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "1.0"
-uuid = "1.7"
+uuid = "1.8"
 
 [dev-dependencies]
 pgrx-tests = "=0.11.0"
