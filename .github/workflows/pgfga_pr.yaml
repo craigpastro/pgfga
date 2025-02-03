@@ -2,12 +2,8 @@ name: pgfga pull request
 
 on:
   pull_request:
-    paths:
-      - pgfga/**
-
-defaults:
-  run:
-    working-directory: pgfga
+    branches:
+      - main
 
 jobs:
   test:
